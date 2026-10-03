@@ -1,6 +1,6 @@
 ---
 name: assessing-genai-security
-description: Expert threat assessment for GenAI/LLM systems by a strict step-by-step method: attack surface, harm, exploitation complexity, delta to the existing model, and risk-reduction measures. The output is split into an auditable analysis trail and a final assessment. Apply to a GenAI/LLM system, integration, a single feature, an assistant, an agent, or RAG, on requests like "assess security", "threat model", "risk assessment of an integration", "security review". Not for non-GenAI audits, and not for writing exploits.
+description: 'Expert threat assessment for GenAI/LLM systems by a strict step-by-step method: attack surface, harm, exploitation complexity, delta to the existing model, and risk-reduction measures. The output is split into an auditable analysis trail and a final assessment. Apply to a GenAI/LLM system, integration, a single feature, an assistant, an agent, or RAG, on requests like "assess security", "threat model", "risk assessment of an integration", "security review". Not for non-GenAI audits, and not for writing exploits.'
 ---
 
 # GenAI Security Assessment
