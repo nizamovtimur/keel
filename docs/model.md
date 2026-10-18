@@ -45,7 +45,7 @@ Every vocabulary is frozen in the Pydantic models and mirrored in `catalog/*.yam
 | Vocabulary | Values |
 | --- | --- |
 | `harm` - what breaks | `wrong-decision`, `data-integrity`, `data-exposed`, `code-execution`, `downtime`, `reputation-legal` |
-| `source` - who or what drives it | `external-attacker`, `internal`, `hallucination`, `error`, `accident` |
+| `source` - who or what drives it | `external-attacker`, `supply-chain`, `internal`, `error`, `accident`, `model-mistake`, `model-overeager`, `model-own-goal` |
 | `surface` - the channel a component treats as trustworthy | `user-input`, `retrieved-content`, `tool-output`, `agent-message`, `memory`, `training-data`, `model-output` |
 | `component` - where the weakness sits | `model`, `tool`, `downstream`, `memory`, `knowledge-base`, `identity-store` |
 | `nature` | `targeted` (remove it and the attack fails), `secondary` (it only amplifies) |

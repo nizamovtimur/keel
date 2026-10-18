@@ -42,7 +42,7 @@ The mirror also fails. A record that duplicates one already in the catalog - sam
 
 **3. Reachability against weaknesses.** Closing any `targeted` weakness should make the `reachability` carve-out fire. If it does not, the pair is incoherent - either the weakness is not really targeted, or the carve-out is describing something else.
 
-**4. Source completeness.** If the threat is real without an attacker, `source` must include the non-attacker cause: `hallucination`, `error` or `accident`. An attacker-only source on a threat that fires from a plain model mistake understates it.
+**4. Source completeness.** If the threat is real without an attacker, `source` must include the non-attacker cause: `model-mistake`, `model-overeager`, `error` or `accident`. An attacker-only source on a threat that fires from a plain model mistake, or from the model's own initiative, understates it.
 
 **5. Surface against weakness.** A weakness about content crossing into a component names the channel. A weakness about the component's own authority names none - and a channel put there anyway is a wrong answer in a field readers filter on. Check the two agree with the text.
 

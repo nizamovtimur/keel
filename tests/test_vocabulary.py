@@ -48,10 +48,10 @@ def test_a_value_in_the_schema_but_not_the_file_is_an_error(catalog_dir):
 def test_a_value_missing_its_gloss_is_an_error(catalog_dir):
     d = catalog_dir()
     data = yaml.safe_load((d / "source.yaml").read_text(encoding="utf-8"))
-    data["source"]["hallucination"] = {"name": "Hallucination"}   # no desc
+    data["source"]["model-mistake"] = {"name": "Model: honest mistake"}   # no desc
     (d / "source.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
 
-    assert any("hallucination" in e and "desc" in e for e in vocabulary_errors(d))
+    assert any("model-mistake" in e and "desc" in e for e in vocabulary_errors(d))
 
 
 def test_a_missing_file_is_an_error(catalog_dir):

@@ -3,7 +3,8 @@ title: The organization's voice says something offensive, discriminatory or ille
 harm: reputation-legal
 source:
 - external-attacker
-- hallucination
+- internal
+- model-mistake
 weaknesses:
 - component: downstream
   surface:

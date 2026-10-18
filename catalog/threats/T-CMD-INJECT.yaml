@@ -3,7 +3,8 @@ title: A tool hands the model's arguments to an interpreter - by interpolation, 
 harm: code-execution
 source:
 - external-attacker
-- hallucination
+- model-mistake
+- model-overeager
 weaknesses:
 - component: tool
   surface:

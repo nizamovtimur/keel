@@ -3,7 +3,7 @@ title: Text the agent produced is picked up and run as code by something downstr
 harm: code-execution
 source:
 - external-attacker
-- hallucination
+- model-mistake
 weaknesses:
 - component: downstream
   surface:

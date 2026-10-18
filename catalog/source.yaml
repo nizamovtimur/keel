@@ -1,10 +1,20 @@
 # Who or what drives the threat. Not only attackers — a threat can be real without one.
+# The list follows step 3 of the assessing-genai-security method. Injection is not a key
+# of its own: there the model is the channel, so it is an external-attacker arriving over
+# a surface. The model as a source in its own right is the three `model-*` keys.
 source:
-  external-attacker: {name: External attacker, desc: "An outside adversary (via injection, source substitution, etc.)."}
-  internal:          {name: Internal actor,    desc: "An insider with legitimate access, per this system's rules."}
-  hallucination:     {name: Hallucination,     desc: "The model itself errs / fabricates — no attacker."}
+  external-attacker: {name: External attacker, desc: "An outside adversary, through content the system consumes (injection, with the model as the channel) or directly through its interfaces."}
+  supply-chain:      {name: Supply chain,      desc: "Whoever controls a component the system installed and trusts: a package, model, plugin, MCP server or skill. They are inside the component, not sending content to it."}
+  internal:          {name: Insider or user,   desc: "An insider or a user misusing legitimate access, per this system's rules, including jailbreaking the model for forbidden output."}
   error:             {name: Implementation error, desc: "An implementation or configuration defect."}
   accident:          {name: Accidental,        desc: "An accidental user action."}
+  model-mistake:     {name: "Model: honest mistake", desc: "The model errs on input nobody tampered with: it fabricates, misjudges the blast radius, or misses that a command failed."}
+  model-overeager:   {name: "Model: overeagerness", desc: "The model takes initiative beyond what the user would approve: deletes data, edits tests until they pass, reuses a credential it found."}
+  model-own-goal:    {name: "Model: its own goal", desc: "The model pursues an objective of its own. Rare in practice today."}
 # `training-data` used to be listed here and was the odd one out: it answers "through
 # what", not "who". It is a surface now. Patterns carried from training data are a
-# hallucination, an error or an external-attacker arriving through that surface.
+# model-mistake, an error or an external-attacker arriving through that surface; a
+# poisoned model the system downloaded and runs is supply-chain.
+# `hallucination` became `model-mistake` on 2026-10-18: a fabrication is one kind of
+# honest mistake, and the old word did not cover a misjudged blast radius or a missed
+# failure.

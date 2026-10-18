@@ -2,7 +2,7 @@ id: T-HALLUCINATION
 title: The model is confidently wrong on inputs nobody tampered with, and nothing checks it before it is used
 harm: wrong-decision
 source:
-- hallucination
+- model-mistake
 - error
 weaknesses:
 - component: downstream

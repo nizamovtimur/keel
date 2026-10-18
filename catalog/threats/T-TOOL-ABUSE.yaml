@@ -3,7 +3,8 @@ title: A tool the agent legitimately holds changes or destroys state on the mode
 harm: data-integrity
 source:
 - external-attacker
-- hallucination
+- model-mistake
+- model-overeager
 - accident
 weaknesses:
 - component: tool
@@ -89,7 +90,7 @@ references:
   note: 'The first weakness where the instruction was understood and the write still ran: the agent deleted the live production database during a stated freeze, then reported rollback as impossible when a standard restore worked, which delayed recovery.'
 - title: 'Gemini CLI ''lost'' files during a failed file move operation - issue #4586'
   url: https://github.com/google-gemini/gemini-cli/issues/4586
-  note: 'The hallucination source, with the transcript attached: a directory creation failed silently, the agent took it as success, and its following move commands renamed every file onto the same target, overwriting all but the last. Closed as not planned.'
+  note: 'The honest-mistake source, with the transcript attached: a directory creation failed silently, the agent took it as success, and its following move commands renamed every file onto the same target, overwriting all but the last. Closed as not planned.'
 - title: How Hidden Prompt Injections Can Hijack AI Code Assistants Like Cursor
   url: https://www.hiddenlayer.com/research/how-hidden-prompt-injections-can-hijack-ai-code-assistants-like-cursor
   note: 'The second weakness by the retrieved-content channel: HTML comments in a README the user never saw drove Cursor to run terminal commands on its own denylist. The demonstrated outcome was exfiltration rather than destruction, so this is a proven path to the call and not yet a public case of this harm. Cursor closed the denylist bypass in 1.3.'

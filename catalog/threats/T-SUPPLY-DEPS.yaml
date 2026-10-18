@@ -2,8 +2,8 @@ id: T-SUPPLY-DEPS
 title: A component the agent runs is not the one that was intended
 harm: code-execution
 source:
-- external-attacker
-- hallucination
+- supply-chain
+- model-mistake
 - error
 weaknesses:
 - component: downstream
