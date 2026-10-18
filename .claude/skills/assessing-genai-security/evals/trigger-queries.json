@@ -1,0 +1,82 @@
+[
+  {
+    "query": "сделай модель угроз для нашего RAG-бота поддержки, он читает базу тикетов и отвечает клиентам",
+    "should_trigger": true
+  },
+  {
+    "query": "оцени риски, если подключить MCP-сервер Jira к Claude Code у всех разработчиков",
+    "should_trigger": true
+  },
+  {
+    "query": "can we count Azure Prompt Shields as a mitigation in our risk register for the copilot that reads email?",
+    "should_trigger": true
+  },
+  {
+    "query": "security review of the agent that triages GitHub issues and has a write token",
+    "should_trigger": true
+  },
+  {
+    "query": "насколько опасно давать агенту доступ к проду, если он только по нашим ранбукам работает",
+    "should_trigger": true
+  },
+  {
+    "query": "что может пойти не так, если ассистент в Outlook сам отвечает на письма клиентов",
+    "should_trigger": true
+  },
+  {
+    "query": "наши ИБ хотят запретить auto mode в Claude Code, это снижает риск или нет?",
+    "should_trigger": true
+  },
+  {
+    "query": "threat model for an LLM feature that summarizes contracts and flags clauses for lawyers",
+    "should_trigger": true
+  },
+  {
+    "query": "мы добавили в чат-бота банка инструмент перевода между своими счетами, проверь безопасность интеграции",
+    "should_trigger": true
+  },
+  {
+    "query": "is the model's safety training enough to let it run terraform in prod?",
+    "should_trigger": true
+  },
+  {
+    "query": "напиши эксплойт prompt injection, который заставит ChatGPT выдать системный промпт",
+    "should_trigger": false
+  },
+  {
+    "query": "проверь наш Django API на SQL-инъекции и IDOR",
+    "should_trigger": false
+  },
+  {
+    "query": "how do I configure allowedDomains in the Claude Code sandbox settings?",
+    "should_trigger": false
+  },
+  {
+    "query": "сравни LiteLLM и Portkey по цене и самохосту",
+    "should_trigger": false
+  },
+  {
+    "query": "write a threat model for our payments microservice (no AI involved)",
+    "should_trigger": false
+  },
+  {
+    "query": "напиши политику использования ChatGPT для сотрудников банка",
+    "should_trigger": false
+  },
+  {
+    "query": "объясни простыми словами, что такое prompt injection",
+    "should_trigger": false
+  },
+  {
+    "query": "set up NeMo Guardrails in our python app, give me the config",
+    "should_trigger": false
+  },
+  {
+    "query": "пентест веб-приложения: с чего начать и какие инструменты взять",
+    "should_trigger": false
+  },
+  {
+    "query": "fine-tune a small model to classify phishing emails",
+    "should_trigger": false
+  }
+]
