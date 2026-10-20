@@ -25,7 +25,7 @@ weaknesses:
   - model-output
   text: Nothing in the execution context distinguishes one environment from another, so a configuration or action meant for development is applied to production because the model did not tell them apart.
   nature: targeted
-reachability: 'The agent''s output feeds no consequential decision or action: it is not consumed by a downstream system and it is not the basis on which a person decides anything.'
+reachability: 'The AI system''s output feeds no consequential decision or action: it is not consumed by a downstream system and it is not the basis on which a person decides anything.'
 mitigations:
 - id: CTRL-HUMAN-IN-LOOP
   strength: gating
