@@ -31,7 +31,7 @@ weaknesses:
   - agent-message
   text: In a multi-agent chain, one node's tainted output is accepted by the next as established fact and amplified at each step, so a single bad input becomes the chain's conclusion.
   nature: targeted
-reachability: Every source the agent reads was fixed before deployment and is written to by nothing at runtime - no ingestion, no shared memory, no peer results - or the agent reads no external source at all.
+reachability: Content from knowledge bases, memory, tool results and peer-agent messages cannot influence any consequential human or machine decision, including the choice to perform, refuse, postpone or abandon an otherwise available operation, directly or through later reuse or delegation.
 mitigations:
 - id: CTRL-DATA-VALIDATION
   strength: soft

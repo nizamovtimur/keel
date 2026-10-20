@@ -1,0 +1,61 @@
+id: "CTRL-DOWNSTREAM-WORK-LIMITS"
+name: "Execution-side work limits"
+mitigation_class: "gating_control"
+purpose: "Prevents one caller's accepted requests from monopolizing a downstream service. Limits apply to the actual remote work, including a single expensive query and work retained after a client disconnects."
+formal_implementation_risk: "A client timeout releases its concurrency slot while the backend query keeps running. Signal: active backend jobs exceed the caller's admitted slots after repeated timeouts."
+review: "Review when a query shape, backend worker, job mode, retry path or cancellation contract changes. Keep a periodic safety-net review alongside those triggers."
+locus:
+  value: "split"
+  note: "The agent runtime supplies stable caller/job attribution; only the service or its execution infrastructure can enforce remote capacity and termination. The handoff is backend admission, not receipt of the client response."
+scope: "Every query, export, job or API request whose shape or arrival is agent-influenced and whose execution consumes downstream capacity. For asynchronous work, admission and active-job accounting remain in scope until backend termination is confirmed."
+out_of_scope: "This does not cap model reasoning tokens or a provider's monetary invoice. Local container limits and limits on request count alone do not satisfy execution-side work bounds."
+control_mechanism: "The executing service, or a scheduler that owns its workers, reserves per-caller and shared capacity before starting work. It applies finite queue and concurrency bounds plus an enforced work/time ceiling per operation. Query complexity admission can reject expensive work early, but worker-side CPU/time/memory limits remain authoritative if the estimate is wrong. Jobs carry an execution deadline; a client timeout does not free active reservations. Cancellation is confirmed by the worker before capacity is returned. Where remote cancellation cannot be enforced, keep the work reserved and isolate it within a backend allocation that has a hard bound."
+failure_behavior:
+  value: "fail_closed"
+  note: "Unavailable admission state or unknown job cost refuses new work. Lost cancellation acknowledgement retains the reservation and raises a reconciliation event; it never creates a free slot for a job that may still run."
+telemetry:
+  events:
+    - name: "downstream_work.admitted"
+      records: "Which backend allocation was reserved for a job."
+      attributes:
+        - "caller identity"
+        - "backend job id"
+        - "reserved allocation"
+        - "execution deadline"
+    - name: "downstream_work.blocked"
+      records: "Which operation exceeded admission bounds."
+      attributes:
+        - "caller identity"
+        - "operation class"
+        - "limiting allocation"
+    - name: "downstream_work.settled"
+      records: "When remote work actually stopped and its reservation was released."
+      attributes:
+        - "backend job id"
+        - "worker completion or cancellation evidence"
+        - "measured consumption"
+  evidence: "Append-only records outside the agent runtime, retained for the investigation and reconciliation window of the guarded operation. Store identifiers and policy decisions rather than the confidential payload itself."
+anti_patterns:
+  - "Only RPM is limited. Signal: one accepted query can exceed the backend execution ceiling."
+  - "A socket timeout is counted as cancellation. Signal: the backend still lists the job after its slot was released."
+  - "Each retry gets an unrelated allocation. Signal: attempts from one task exceed its aggregate capacity."
+validation:
+  - criterion: "One expensive operation cannot monopolize the backend."
+    test_scenario: "Submit a syntactically valid high-expansion query with agent token and iteration limits already satisfied."
+    expected_result: "Backend admission refuses it or backend execution terminates at the configured ceiling."
+    base: true
+  - criterion: "Client timeout does not release running work."
+    test_scenario: "Disconnect the client during a long job, then retry repeatedly."
+    expected_result: "Active remote jobs remain within the caller's allocation and reservations persist until settlement."
+    base: true
+  - criterion: "Other callers retain their assigned capacity."
+    test_scenario: "Saturate one caller's queue and active allocation."
+    expected_result: "Additional work for that caller is refused while a second caller completes within its separate allocation."
+    base: true
+  - criterion: "Lost accounting cannot create unbounded work."
+    test_scenario: "Disable admission storage and separately drop a cancellation acknowledgement."
+    expected_result: "New admission stops; unsettled work remains reserved and visible."
+    base: true
+faq: []
+requires: []
+implementations: []
