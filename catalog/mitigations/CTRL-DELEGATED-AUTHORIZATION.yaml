@@ -1,0 +1,58 @@
+id: "CTRL-DELEGATED-AUTHORIZATION"
+name: "Initiating-principal authorization for delegated actions"
+mitigation_class: "gating_control"
+purpose: "Prevents a connector or peer from turning a caller's permitted request into a state-changing operation outside that caller's business entitlement. Deliberately delegated service operations remain possible within their recorded bounds."
+formal_implementation_risk: "The first hop records the user, but a later hop authorizes only the intermediate service account. Signal: a downstream write has an executing agent identity but no verifiable originating principal and delegation scope."
+review: "Review when a delegation hop, execution identity, scheduled trigger, entitlement model or resource binding changes. Keep a periodic safety-net review alongside those triggers."
+locus:
+  value: "split"
+  note: "The runtime preserves authenticated provenance and the application/resource owner defines business entitlements. A shared gateway can enforce the join, but it cannot invent the business policy for each target."
+scope: "Every state-changing operation reached through a service identity, connector or agent handoff, including scheduled continuation of a user task. Evaluate the resolved business operation and target, rather than requiring the user to possess the service account's raw administrative API credential."
+out_of_scope: "This does not establish consent to a particular permitted action or satisfy independent workflow prerequisites. Use action approval and workflow-state controls for those decisions. An authenticated service identity alone is not an initiating-principal entitlement."
+control_mechanism: "The execution gateway obtains the originating principal from authenticated runtime state and binds each task to that principal. Each delegated hop carries an integrity-protected, audience-bound grant limited to the resolved business operation, target and expiry. Immediately before the side effect, the resource service or an unavoidable gateway intersects the principal's current business entitlement with the grant and connector capability. It rejects a missing origin, expanded grant or caller-supplied identity field. An explicit delegated service entitlement is a policy record with its own resource bounds, not a generic approval button."
+failure_behavior:
+  value: "fail_closed"
+  note: "Missing or expired grants, unverifiable origin, unavailable entitlement data and revoked permissions refuse the side effect. Refusals include the failed hop; expiry never silently becomes service-account authority."
+telemetry:
+  events:
+    - name: "delegated_action.allowed"
+      records: "Which originating entitlement authorized the side effect."
+      attributes:
+        - "originating principal"
+        - "executing identity"
+        - "delegation chain digest"
+        - "resolved operation and target"
+        - "entitlement version"
+    - name: "delegated_action.blocked"
+      records: "Which excessive or unverifiable delegation was refused."
+      attributes:
+        - "originating principal if verified"
+        - "rejecting hop"
+        - "requested operation and target"
+        - "refusal reason"
+  evidence: "Append-only records outside the agent runtime, retained for the investigation and reconciliation window of the guarded operation. Store identifiers and policy decisions rather than the confidential payload itself."
+anti_patterns:
+  - "Only the first hop checks the user. Signal: a more privileged second agent can perform the same forbidden write."
+  - "The user confirms a forbidden action and the confirmation is treated as a grant. Signal: approving the prompt changes the authorization verdict without a business entitlement record."
+  - "A model-supplied user_id establishes origin. Signal: changing that argument changes whose resources the write can affect."
+validation:
+  - criterion: "A caller cannot obtain a forbidden write through an authorized agent."
+    test_scenario: "Use a caller allowed to invoke the agent but forbidden to modify a target; request the modification."
+    expected_result: "No side effect occurs, even when the caller confirms it."
+    base: true
+  - criterion: "A handoff cannot increase originating authority."
+    test_scenario: "Route the forbidden write through a more privileged peer and forge an origin field."
+    expected_result: "The peer refuses both the excessive scope and forged origin."
+    base: true
+  - criterion: "A bounded service delegation is checked as a business entitlement."
+    test_scenario: "Grant account recovery for one user, then request recovery for another account."
+    expected_result: "The delegated recovery succeeds only for the recorded account."
+    base: true
+  - criterion: "Revocation takes effect before continued execution."
+    test_scenario: "Revoke the originating entitlement after task creation but before a queued write."
+    expected_result: "The write is refused despite a still-valid connector credential."
+    base: true
+faq: []
+requires:
+  - "CTRL-ACCESS-CONTROL"
+implementations: []

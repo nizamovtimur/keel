@@ -6,6 +6,7 @@ source:
 - hallucination
 - error
 - accident
+- internal
 weaknesses:
 - component: tool
   text: A tool reaches data under an authorization the agent's audience does not hold, and hands it back into the context as free text. Whatever the tool can read, the model can repeat.
@@ -13,7 +14,7 @@ weaknesses:
 - component: tool
   surface:
   - model-output
-  text: A tool sends data to a destination outside the perimeter, with the destination taken from the model's own arguments. Whatever is in the context can leave by that route.
+  text: A tool sends data to a destination outside the perimeter, with the destination taken from the model's own arguments. Whatever is in the context can leave by that route. The same disclosure can occur through a fixed, approved endpoint, such as a public web-search query containing internal data.
   nature: targeted
 - component: tool
   surface:
@@ -31,23 +32,49 @@ weaknesses:
   - user-input
   text: The model acts on content it read as though it were instruction, so text placed where the agent will read it - a document, a page, a ticket body - can direct it to disclose what it can reach.
   nature: targeted
-reachability: There is no data under differentiated authorization anywhere in the agent's context or reach - everything it can read is already available to any recipient of its output and to any destination its tools can send to.
+- component: model
+  surface:
+  - memory
+  text: A saved instruction is restored into a later context that contains newly available confidential data, and the reply or a tool call can release that data to the audience or destination named by the saved instruction.
+  nature: targeted
+- component: model
+  surface:
+  - user-input
+  - retrieved-content
+  - tool-output
+  - memory
+  text: Confidential values are placed in hidden context fields or request metadata that the model can read, although the recipient of its response is not authorized for those values. Hiding the field in the interface does not remove it from the disclosure path.
+  nature: targeted
+- component: model
+  surface:
+  - user-input
+  - retrieved-content
+  - tool-output
+  - memory
+  - agent-message
+  text: The request assembler selects an inference recipient independently of the data processing restriction, or evaluates a wrong source label, overly broad rule or incorrectly bound destination, so the assembled payload passes a technical allow decision while violating the applicable recipient or purpose restriction.
+  nature: targeted
+- component: model
+  surface: []
+  text: The runtime appends confidential metadata or credentials to model-visible request fields without including those fields in the data classification of the outgoing request.
+  nature: targeted
+reachability: There is no data under differentiated authorization anywhere in the agent's context or reach - everything it can read is already available to any recipient of its output and to any destination its tools can send to. Recipients include inference processors and fallback endpoints; the condition also covers hidden request fields, restored memory, later tasks and restrictions on the processing purpose, not merely a successful technical allow decision.
 mitigations:
 - id: CTRL-DATA-ACCESS-CONTROL
   strength: gating
-  rationale: Closes the first weakness at the source. Field- and record-level control bounds what a tool returns to what the requesting principal may hold, so the context never contains what the audience could not have asked for directly.
+  rationale: 'Closes the first weakness at the source. Field- and record-level control bounds what a tool returns to what the requesting principal may hold, so the context never contains what the audience could not have asked for directly.'
 - id: CTRL-ACCESS-CONTROL
   strength: gating
   rationale: 'Closes the first and third weaknesses one step earlier than data-level control: the read operation itself is authorized against the audience''s rights before it runs, so a tool cannot be asked to fetch on behalf of someone who could not fetch it themselves.'
 - id: CTRL-CONTEXT-FILTERING
-  strength: gating
-  rationale: Where a tool or retrieval legitimately returns more than the audience may see, this strips it at the context boundary - before the model reads it or before the reply leaves. It closes the fourth weakness where the source cannot be scoped.
+  strength: soft
+  rationale: 'Redacts detected sensitive spans before model submission. Missed spans, later-added metadata and downstream exports retain a disclosure path; redaction does not close the threat.'
 - id: CTRL-DLP
-  strength: gating
-  rationale: Closes the egress weakness. A tool sending data outward on the model's say-so is inspected at the perimeter and the transfer blocked, so the destination the model chose never receives it.
+  strength: soft
+  rationale: 'Can detect and block recognized sensitive content at covered submission and export boundaries. Recognition misses and incorrect recipient/purpose policy remain possible; detection does not close the threat.'
 - id: CTRL-URL-ALLOWLIST
-  strength: gating
-  rationale: 'Closes the egress weakness from the other side: a destination not on the list is unreachable, so the route is closed for every destination the model might be steered toward rather than for the ones an inspector recognizes.'
+  strength: soft
+  rationale: 'Blocks exports to destinations outside the allowed URL set. It does not close this threat: an allowed search endpoint or inference processor can still be an impermissible recipient for a particular payload or purpose.'
 - id: CTRL-DATA-EGRESS-MONITORING
   strength: soft
   rationale: 'Notices data leaving by the egress weakness after the fact. It does not close the threat: it produces a signal, and the path stays open until something acts on that signal.'
@@ -62,7 +89,19 @@ mitigations:
   rationale: 'Makes the model less inclined to treat read content as instruction. It does not close the threat: it leans on model behaviour, which is never a guarantee.'
 - id: CTRL-EXTERNAL-CONTENT-SANDBOX
   strength: soft
-  rationale: 'Processes external content in isolation before it enters the context, which limits what a steered model can be made to do with it. It does not close the threat here: the content still enters and the model still reads it - it gates execution, not disclosure.'
+  rationale: 'Confines the external-content extraction process to its resource profile. Extracted instructions can still steer a model with export authority; parser confinement does not close that later disclosure path.'
+- id: CTRL-MEMORY-SANITIZATION
+  strength: soft
+  rationale: 'Screens instructions at memory write time. It does not close disclosure: future confidential context and an instruction missed by the filter can still be combined.'
+- id: CTRL-MEMORY-VERSIONING
+  strength: soft
+  rationale: Removes a planted export instruction from later contexts after discovery. It does not recover data already transmitted.
+- id: CTRL-EXTERNAL-AI-WARNING
+  strength: soft
+  rationale: Makes the selected processor and data handling visible. It does not grant that processor permission to receive the data or prevent a prohibited transfer.
+- id: CTRL-SHADOW-AI-POLICY
+  strength: soft
+  rationale: Defines permitted services and data categories. It does not close the path without enforcement on the actual inference request, including unsanctioned alternatives.
 references:
 - title: 'ForcedLeak: AI agent risks exposed in Salesforce Agentforce'
   url: https://noma.security/blog/forcedleak-agent-risks-exposed-in-salesforce-agentforce/
@@ -73,8 +112,20 @@ references:
 - title: Permissive Default Allowlist Enables Unauthorized File Read and Network Exfiltration in Claude Code (CVE-2025-55284)
   url: https://github.com/anthropics/claude-code/security/advisories/GHSA-x5gv-jw7f-j6xj
   note: 'The filesystem weakness in the vendor''s own advisory: untrusted content in context made Claude Code read a file and send it out through DNS-lookup commands that sat on the no-confirmation allowlist. Fixed in 1.0.4 by removing those commands from the allowlist.'
-positioning: 'LLM02 (Sensitive Information Disclosure) is a consequence class and is wider than this record in two directions. Disclosure of the system''s own metadata - prompt fragments, versions, paths - rests on a different rule-out and is its own record. So does one tenant''s data surfacing in another''s session through shared state: that path is ruled out by single-tenancy or statelessness, which says nothing about this one.'
+- title: 'SpAIware: persistent exfiltration through ChatGPT memory'
+  url: https://embracethered.com/blog/posts/2024/chatgpt-macos-app-persistent-data-exfiltration/
+  note: A researcher demonstrated website instructions stored in memory exfiltrating later conversations from the macOS app. The shipped fix blocked the image-fetch route, not memory poisoning itself; this establishes delayed disclosure, not arbitrary code execution.
+- title: 'Cyberhaven: sensitive enterprise data flowing into AI tools'
+  url: https://www.cyberhaven.com/blog/sensitive-data-flowing-into-ai-tools
+  note: Vendor telemetry records sensitive prompts, uploads and pasted material reaching external AI tools, including personal accounts outside enterprise policy. These are observations in its customer population, not evidence that a particular processor leaked the inputs onward.
+- title: 'OECD incident record: Samsung confidential data submitted to ChatGPT'
+  url: https://oecd.ai/en/incidents/2023-04-06-93c9
+  note: The incident record describes source code and meeting notes submitted to an external chatbot. It supports disclosure at submission; it does not establish later training, public disclosure or another customer receiving the material.
+positioning: 'LLM02 (Sensitive Information Disclosure) is a consequence class and is wider than this record in two directions. Disclosure of the system''s own metadata - prompt fragments, versions, paths - rests on a different rule-out and is its own record. So does one tenant''s data surfacing in another''s session through shared state: that path is ruled out by single-tenancy or statelessness, which says nothing about this one. Here a single tenant can still contain users with different entitlements. Recipients also include inference processors and fallback endpoints receiving the assembled request before generation. A technical allow decision can violate the intended restriction when its source label, recipient binding or policy is wrong.'
 tags:
 - data
 - retrieval
 - egress
+- upstream
+- context
+- metadata

@@ -14,7 +14,7 @@ weaknesses:
 - component: tool
   surface:
   - tool-output
-  text: A tool reached through a dynamic registry or a third party is substituted, with no integrity or authenticity check between registration and use, and the substitute runs with the tool's access.
+  text: A tool reached through a dynamic registry or a third party is substituted, with no integrity or authenticity check between registration and use, and the substitute runs with the tool's access. An already connected remote service can also change its implementation through an update or compromise while retaining its registered name and endpoint; a pinned client configuration does not freeze that implementation.
   nature: targeted
 - component: tool
   surface:
@@ -30,7 +30,7 @@ weaknesses:
 - component: tool
   text: An in-process tool or extension shares the agent's address space with no isolation boundary, so a substituted component has the agent's full context, memory and credentials rather than its own slice.
   nature: secondary
-reachability: 'The agent runs nothing it did not ship with: every tool, extension, package and model it uses is fixed before deployment and resolved from nowhere at runtime.'
+reachability: 'The agent runs nothing it did not ship with: every tool, extension, package and model it uses is fixed before deployment and resolved from nowhere at runtime. This includes the implementations of already connected remote tools and peers, not just their configured names or endpoints; an externally administered implementation that can change does not satisfy the condition.'
 mitigations:
 - id: CTRL-INSTALL-COMMAND-BLOCK
   strength: gating
@@ -76,10 +76,10 @@ mitigations:
   rationale: 'Closes the isolation weakness for extensions: a substituted extension runs in a restricted environment and reaches only what the sandbox grants, not the agent''s context and credentials.'
 - id: CTRL-CODE-SANDBOX
   strength: gating
-  rationale: 'Closes the isolation weakness for tool code: a substituted tool runs with no host, network or secret access, so getting a bad component to run gains the attacker the sandbox and nothing beyond it.'
+  rationale: 'Closes the isolation weakness for tool code: a substituted tool runs with no host, network or secret access, so getting a bad component to run gains the attacker the sandbox and nothing beyond it. This guarantee requires that neither the profile nor a granted host API or credential reaches the harmful resource; granted capabilities remain usable by substituted code.'
 - id: CTRL-AGENT-ISOLATION
-  strength: gating
-  rationale: 'Closes the isolation weakness for a peer agent: a compromised agent runs inside its own perimeter and cannot reach the memory or credentials of the one that called it.'
+  strength: soft
+  rationale: 'Separates direct process, file and credential access where profiles exclude the caller resources. Malicious output and abuse of granted capabilities remain possible.'
 - id: CTRL-EXTENSION-RIGHTS
   strength: soft
   rationale: 'Bounds what a substituted extension may do by declared capability. It does not close the threat: it narrows the blast radius of a component that already ran, and a capability it was granted is still its to misuse.'
