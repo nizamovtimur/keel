@@ -24,7 +24,7 @@ See [Authoring](authoring.md) for how the two work together.
 
 <p align="center"><img src="img/ui-preview.svg" alt="Keel's three-pane threat editor: the threat list on the left, a form built from the JSON Schema in the middle, and preview or field guidance on the right" width="900"></p>
 
-One static HTML file, no build step, served at `http://localhost:8000/`. Six screens: Overview, Threats, Mitigations, Style guide, Coverage and Reports.
+One static HTML file, no build step, served at `http://127.0.0.1:8420/` by `keel up`. Six screens: Overview, Threats, Mitigations, Style guide, Coverage and Reports.
 
 The interface is review-first. The fastest way to author is to ask an LLM through the MCP tools; the UI writes files and points you at the file to commit, and it is not a git client. It carries full create, read, update and delete for threats and mitigations as a complete fallback.
 
@@ -42,7 +42,9 @@ The interface is review-first. The fastest way to author is to ask an LLM throug
 
 **REST** reads and writes over `/threats`, `/mitigations`, `/style-guide`, `/coverage`, `/reports`, `/search`, `/schema/{entity}`, `/rules`, `/vocabulary`, `/health`, plus `POST /threats/validate` behind the editor.
 
-The MCP tools and the REST writes share one service layer, so every edit lands in `catalog/*.yaml` the same way.
+The MCP tools and the REST writes share one service layer, so every edit lands in `catalog/*.yaml` the same way. The two run as separate processes, and each reloads the catalog when the files change underneath it, so an entry written through one shows up in the other, as does a hand edit or a `git pull`.
+
+Both listen on loopback only. Neither has a login, so the REST app also checks the host name a request asks for and refuses writes that come from another site, and `keel --http` will not bind to any other address unless `MCP_HTTP_ALLOW_REMOTE` is set.
 
 ## Roadmap
 

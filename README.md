@@ -136,9 +136,14 @@ A second assessment of the same system is a delta against the first, not a re-de
 ### Browse and edit it
 
 ```bash
-uv run uvicorn keel.main:app     # UI and REST at http://localhost:8000/
-# or: docker compose up          # same UI; add --profile mcp for HTTP MCP on :8001
+uv run keel up                   # UI and REST at http://127.0.0.1:8420/, in the background
+uv run keel down                 # stop it
+# or: docker compose up          # same UI at http://localhost:8000/; add --profile mcp for HTTP MCP on :8001
 ```
+
+`keel up` starts the server if it is not already running and says where it is, so it is safe to run at the start of every session. The UI and the MCP server are two processes over the same files, and each picks up what the other writes without a restart.
+
+Keel listens on `127.0.0.1` and nowhere else. The API writes your catalog and has no login, so being local is its whole access control: it binds to loopback, answers only to `localhost` and `127.0.0.1`, sends no CORS headers, and refuses a write that comes from another site. The container publishes its ports on the host's loopback for the same reason. To serve Keel to other machines, put something that authenticates in front of it and add its name to `ALLOWED_HOSTS`.
 
 One static HTML file, no build step, six screens. The fastest way to author is to ask an LLM through the MCP tools; the UI is review-first and carries full create, read, update and delete as a fallback.
 

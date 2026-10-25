@@ -68,10 +68,10 @@ This block does not describe the system; it exists so the assessor itself can be
 
 Leave a list empty rather than padding it. An empty `volunteered` on a run where the specialist genuinely volunteered nothing is a real signal; an invented entry destroys the only measurement there is.
 
-Then hand back the link, using the host and port Keel is served on (`127.0.0.1:8000` by default; `keel/config.py` holds the setting):
+Then hand back the link, using the host and port Keel is served on (`keel up` serves `127.0.0.1:8420` and prints the address; `ui_port` in `keel/config.py` holds the port):
 
 ```
-http://127.0.0.1:8000/reports/<system-id>/<YYYY-MM-DD>
+http://127.0.0.1:8420/reports/<system-id>/<YYYY-MM-DD>
 ```
 
 Say in one line what the reader will find there and what is left to do, e.g. "3 findings, 5 requirements, review the grades and finalize." Do not print the YAML.
