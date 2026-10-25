@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "keel": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "keel.mcp.server"]
+    }
+  }
+}

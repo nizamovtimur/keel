@@ -121,7 +121,19 @@ uv run keel validate   # confirm the catalog loads
 
 ### Run it against a system
 
-Point your agent at the repo's `.mcp.json`. It launches Keel over stdio and exposes the tools as `mcp__keel__*`; Claude Code picks it up automatically, so there is no server to start.
+Open the repo in your agent. Keel runs over stdio as `python -m keel.mcp.server`, so there is no server to start, and the repo already carries the config each agent reads:
+
+| Agent | MCP server | Skills |
+| --- | --- | --- |
+| Claude Code | `.mcp.json` | `.claude/skills/` |
+| Codex | `.codex/config.toml` (trusted projects only) | `.agents/skills/` |
+| Cursor | `.cursor/mcp.json` | `.agents/skills/` |
+| GitHub Copilot / VS Code | `.mcp.json` | `.agents/skills/` |
+| OpenCode | `opencode.json` | `.agents/skills/` |
+| Kilo Code | `.kilo/kilo.jsonc` | `.agents/skills/` |
+| Gemini CLI | `.gemini/settings.json` | `.agents/skills/` |
+
+Any other agent: point it at the same command, run from the repo root, and at `.agents/skills/`, the shared location most agents read. `.claude/skills/` is the same set for Claude Code, which reads only its own folder; a test fails if the two drift, so edit one and copy it to the other. The `python` on the agent's path has to be the one Keel is installed into (activate the `uv sync` environment, or use `pip install -e .`).
 
 Then ask: *"Assess the GenAI security of \<describe your system\>."*
 

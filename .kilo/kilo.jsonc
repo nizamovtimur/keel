@@ -1,0 +1,9 @@
+{
+  "mcp": {
+    "keel": {
+      "type": "local",
+      "command": ["python", "-m", "keel.mcp.server"],
+      "enabled": true
+    }
+  }
+}
