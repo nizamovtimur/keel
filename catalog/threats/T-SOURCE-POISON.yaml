@@ -31,7 +31,7 @@ weaknesses:
   - agent-message
   text: In a multi-agent chain, one node's tainted output is accepted by the next as established fact and amplified at each step, so a single bad input becomes the chain's conclusion.
   nature: targeted
-reachability: Every source the agent reads was provenance-verified, fixed before deployment, and immutable for the deployment lifetime: no runtime ingestion or indexing; persistent/shared memory is absent or read-only with seed content passing the same pre-deployment provenance check; and no dynamic tool registry, third-party tool output, or peer-agent message can introduce or alter content the agent treats as authoritative—or the agent reads no external source at all.
+reachability: Every source the agent reads was provenance-verified, fixed before deployment, and immutable for the deployment lifetime. No runtime ingestion or indexing; persistent/shared memory is absent or read-only with seed content passing the same pre-deployment provenance check; and no dynamic tool registry, third-party tool output, or peer-agent message can introduce or alter content the agent treats as authoritative—or the agent reads no external source at all.
 mitigations:
 - id: CTRL-DATA-VALIDATION
   strength: soft
