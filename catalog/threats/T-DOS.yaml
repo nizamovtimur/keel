@@ -11,7 +11,12 @@ weaknesses:
 - component: model
   surface:
   - user-input
-  text: Input reaches the model with no bound on its size or on the work it triggers - a very long prompt, a request that unfolds into heavy processing - and the cost is paid from a pool others draw on. The work also includes generated output, hidden reasoning, retries and fallback calls; a short visible answer does not bound its compute or paid-service cost.
+  text: Input reaches the model with no bound on its size or on the work it triggers - a very long prompt, a request that unfolds into heavy processing - and the cost is paid from a pool others draw on.
+  nature: targeted
+- component: model
+  surface:
+  - user-input
+  text: Input is processed without any limit on the work it can trigger, so a payload designed to cause recursion or heavy processing can arrive through an unsanitized channel and cause repeated output, hidden over-reasoning, retries, and fallback calls. For example, sponge tokens or novel attacks.
   nature: targeted
 - component: tool
   surface:
@@ -21,7 +26,7 @@ weaknesses:
 - component: model
   surface:
   - tool-output
-  text: Free-form text returned by a tool is processed with no bound on the work it may trigger, so a payload shaped for recursion or heavy processing arrives through a channel nobody rate-limits.
+  text: Free-form text returned by a tool is processed with no bound on the work it may trigger, so a payload shaped for recursion or heavy processing arrives through an unsanitized channel nobody rate-limits.
   nature: targeted
 - component: tool
   surface:
@@ -41,20 +46,23 @@ weaknesses:
 reachability: The endpoint accepts no untrusted or unbounded input, initiates no inter-agent or tool loops, and its tools have no unmetered outbound path. The condition must also cover hidden inference work, retries, delegated branches and resource-consuming downstream jobs, including work retained after a client timeout. A dedicated allocation is still material if depleting it exhausts service capacity or the payer's budget.
 mitigations:
 - id: CTRL-ITERATION-LIMITS
-  strength: soft
-  rationale: 'Bounds the number of loop iterations on covered paths. It does not close exhaustion: one admitted iteration can perform expensive inference or retain costly work downstream.'
+  strength: gating
+  rationale: 'Closes the loop weakness: depth, iteration count and total steps per task are bounded, so a cycle terminates at the bound rather than at exhaustion.'
 - id: CTRL-TOKEN-LIMITS
-  strength: soft
-  rationale: 'Bounds the covered input or generation token fields. It does not close exhaustion: hidden billed work outside that cap, repeated calls and downstream execution can consume separate allocations.'
+   strength: gating
+  rationale: 'Closes the size half of the input weakness and the tool-output weakness: the tokens a request or a tool result may carry are capped, so the largest unit of work has a known ceiling.'
 - id: CTRL-RATE-LIMITING
-  strength: soft
-  rationale: 'Bounds request arrivals on covered identities and routes. It does not close exhaustion: a permitted request can be expensive, and remote work can continue after the client times out.'
+  strength: gating
+  rationale: 'Closes the rate half of the input weakness and the outbound weakness: requests per user and calls per tool are capped, so neither a caller nor a steered tool can turn volume into exhaustion.'
 - id: CTRL-RESOURCE-QUOTAS
   strength: gating
   rationale: 'Closes all four weaknesses at the floor: hard limits on CPU, memory and bandwidth per agent and tool mean that whatever the path, consumption stops at the quota rather than at the shared pool''s end. These are the four agent/tool-runtime paths above; a remote service outside that enforced allocation needs its own work limits. Local quotas do not bound its query cost or retained jobs.'
 - id: CTRL-DOWNSTREAM-WORK-LIMITS
   strength: gating
-  rationale: Bounds admission, concurrency and active work in the downstream executing service, including a single expensive request and work retained after timeout. It closes that service-side resource path; it does not cap independent inference work.
+  rationale: 'Bounds admission, concurrency and active work in the downstream executing service, including a single expensive request and work retained after timeout. It closes that service-side resource path; it does not cap independent inference work.'
+- id: CTRL-INPUT-FILTERING
+  strength: soft
+  rationale: 'Filters the input and tool-output paths: schema validation, normalization, encoding checks and rejection of known abusive patterns keep malformed or obviously hostile payloads from reaching the model or tool. It does not close the weakness, because valid-looking text can still trigger heavy work and novel or encoded recursion cannot be reliably detected by filtering.'
 references:
 - title: OpenAI ChatGPT Crawler Reflective DDoS Vulnerability
   url: https://github.com/bf/security-advisories/blob/main/2025-01-ChatGPT-Crawler-Reflective-DDOS-Vulnerability.md
@@ -68,7 +76,7 @@ references:
 - title: 'GitLab: nested GraphQL query denial of service, CVE-2019-18455'
   url: https://gitlab.com/gitlab-org/gitlab/-/issues/30096
   note: A disclosed endpoint accepted nested queries whose expansion caused denial of service; GitLab fixed it in 12.4.1. This is evidence for the downstream query boundary, not an observed AI-agent incident.
-positioning: LLM10 (Unbounded Consumption) lines up with this record and also names model extraction through high-volume querying, which is a disclosure of the model rather than an exhaustion of shared resources and is not modelled here. Downstream queries and jobs are additional execution locations for this resource-exhaustion path; a cheap model call can start expensive remote work. Hidden billed work, retries and delegated branches also draw on the operation allocation. Dedicated capacity or budget can still be depleted even when it is not shared.
+positioning: LLM10 (Unbounded Consumption) lines up with this record and also names model extraction through high-volume querying, which is a disclosure of the model rather than an exhaustion of shared resources and is not modelled here.
 tags:
 - availability
 - cost

@@ -14,7 +14,7 @@ weaknesses:
 - component: tool
   surface:
   - model-output
-  text: A tool sends data to a destination outside the perimeter, with the destination taken from the model's own arguments. Whatever is in the context can leave by that route. The same disclosure can occur through a fixed, approved endpoint, such as a public web-search query containing internal data.
+  text: A tool sends data to a destination outside the perimeter, with the destination taken from the model's own arguments. Whatever is in the context can leave by that route. For example, a public web-search query containing internal data.
   nature: targeted
 - component: tool
   surface:
@@ -73,8 +73,8 @@ mitigations:
   strength: soft
   rationale: 'Can detect and block recognized sensitive content at covered submission and export boundaries. Recognition misses and incorrect recipient/purpose policy remain possible; detection does not close the threat.'
 - id: CTRL-URL-ALLOWLIST
-  strength: soft
-  rationale: 'Blocks exports to destinations outside the allowed URL set. It does not close this threat: an allowed search endpoint or inference processor can still be an impermissible recipient for a particular payload or purpose.'
+  strength: gating
+  rationale: 'Closes the egress weakness from the other side: a destination not on the list is unreachable, so the route is closed for every destination the model might be steered toward rather than for the ones an inspector recognizes.'
 - id: CTRL-DATA-EGRESS-MONITORING
   strength: soft
   rationale: 'Notices data leaving by the egress weakness after the fact. It does not close the threat: it produces a signal, and the path stays open until something acts on that signal.'
@@ -121,7 +121,7 @@ references:
 - title: 'OECD incident record: Samsung confidential data submitted to ChatGPT'
   url: https://oecd.ai/en/incidents/2023-04-06-93c9
   note: The incident record describes source code and meeting notes submitted to an external chatbot. It supports disclosure at submission; it does not establish later training, public disclosure or another customer receiving the material.
-positioning: 'LLM02 (Sensitive Information Disclosure) is a consequence class and is wider than this record in two directions. Disclosure of the system''s own metadata - prompt fragments, versions, paths - rests on a different rule-out and is its own record. So does one tenant''s data surfacing in another''s session through shared state: that path is ruled out by single-tenancy or statelessness, which says nothing about this one. Here a single tenant can still contain users with different entitlements. Recipients also include inference processors and fallback endpoints receiving the assembled request before generation. A technical allow decision can violate the intended restriction when its source label, recipient binding or policy is wrong.'
+positioning: 'LLM02 (Sensitive Information Disclosure) is a consequence class and is wider than this record in two directions. Disclosure of the system''s own metadata - prompt fragments, versions, paths - rests on a different rule-out and is its own record. So does one tenant''s data surfacing in another''s session through shared state: that path is ruled out by single-tenancy or statelessness, which says nothing about this one.'
 tags:
 - data
 - retrieval
