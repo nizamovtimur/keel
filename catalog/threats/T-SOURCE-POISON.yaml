@@ -14,7 +14,7 @@ weaknesses:
 - component: memory
   surface:
   - memory
-  text: The persistent memory of a multi-agent system accepts writes without verification, so what one write put there shapes every later decision until someone removes it by hand. Content from an earlier untrusted task could be restored as established knowledge.
+  text: The persistent memory accepts writes without verification, so what one write put there shapes every later decision until someone removes it by hand. Content from an earlier untrusted task could be restored as established knowledge.
   nature: targeted
 - component: tool
   surface:
