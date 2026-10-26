@@ -49,7 +49,7 @@ mitigations:
   strength: gating
   rationale: 'Closes the loop weakness: depth, iteration count and total steps per task are bounded, so a cycle terminates at the bound rather than at exhaustion.'
 - id: CTRL-TOKEN-LIMITS
-   strength: gating
+  strength: gating
   rationale: 'Closes the size half of the input weakness and the tool-output weakness: the tokens a request or a tool result may carry are capped, so the largest unit of work has a known ceiling.'
 - id: CTRL-RATE-LIMITING
   strength: gating
