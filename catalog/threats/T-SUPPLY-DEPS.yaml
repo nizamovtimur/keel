@@ -30,7 +30,7 @@ weaknesses:
 - component: tool
   text: An in-process tool or extension shares the agent's address space with no isolation boundary, so a substituted component has the agent's full context, memory and credentials rather than its own slice.
   nature: secondary
-reachability: 'The agent runs nothing it did not ship with: every tool, extension, package and model it uses is fixed before deployment and resolved from nowhere at runtime. This includes the implementations of already connected remote tools and peers, not just their configured names or endpoints; an externally administered implementation that can change does not satisfy the condition.'
+reachability: 'The agent runs nothing it did not ship with: every tool, extension, package and model it uses is fixed before deployment and resolved from nowhere at runtime. This includes the implementations of already connected remote tools and peers, not just their configured names or endpoints.'
 mitigations:
 - id: CTRL-INSTALL-COMMAND-BLOCK
   strength: gating
