@@ -13,7 +13,7 @@ weaknesses:
   - tool-output
   text: Model output reaches a human audience as the organization's own voice, with nothing between generation and delivery that checks it for content the organization would not say - whether the content came from the training data, from a steered prompt or from a tool's free text. A present moderation layer can leave the same delivery path open when it misses a violation; the absence of a check is not the only case.
   nature: targeted
-reachability: The AI system's output reaches no human recipients (no external or employee audience) for whom toxic content would carry reputational or legal consequences. Include audiences reached when a person republishes or forwards the generated content.
+reachability: The agent's output reaches no human recipients (no external or employee audience) for whom toxic content would carry reputational or legal consequences. Include audiences reached when a person republishes or forwards the generated content.
 mitigations:
 - id: CTRL-CONTENT-POLICY
   strength: soft

@@ -1,5 +1,5 @@
 id: T-DATA-LEAK
-title: Data the AI system may read reaches an audience that may not
+title: Data the agent may read reaches an audience that may not
 harm: data-exposed
 source:
 - external-attacker
@@ -9,7 +9,7 @@ source:
 - internal
 weaknesses:
 - component: tool
-  text: A tool reaches data under an authorization the AI system's audience does not hold, and hands it back into the context as free text. Whatever the tool can read, the model can repeat.
+  text: A tool reaches data under an authorization the agent's audience does not hold, and hands it back into the context as free text. Whatever the tool can read, the model can repeat.
   nature: targeted
 - component: tool
   surface:
@@ -30,7 +30,7 @@ weaknesses:
   surface:
   - retrieved-content
   - user-input
-  text: The model acts on content it read as though it were instruction, so text placed where the AI system will read it - a document, a page, a ticket body - can direct it to disclose what it can reach.
+  text: The model acts on content it read as though it were instruction, so text placed where the agent will read it - a document, a page, a ticket body - can direct it to disclose what it can reach.
   nature: targeted
 - component: model
   surface:
@@ -58,7 +58,7 @@ weaknesses:
   surface: []
   text: The runtime appends confidential metadata or credentials to model-visible request fields without including those fields in the data classification of the outgoing request.
   nature: targeted
-reachability: There is no data under differentiated authorization anywhere in the AI system's context or reach - everything it can read is already available to any recipient of its output and to any destination its tools can send to. Recipients include inference processors and fallback endpoints; the condition also covers hidden request fields, restored memory, later tasks and restrictions on the processing purpose, not merely a successful technical allow decision.
+reachability: There is no data under differentiated authorization anywhere in the agent's context or reach - everything it can read is already available to any recipient of its output and to any destination its tools can send to. Recipients include inference processors and fallback endpoints; the condition also covers hidden request fields, restored memory, later tasks and restrictions on the processing purpose, not merely a successful technical allow decision.
 mitigations:
 - id: CTRL-DATA-ACCESS-CONTROL
   strength: gating
