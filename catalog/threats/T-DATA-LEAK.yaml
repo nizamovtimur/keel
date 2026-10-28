@@ -15,7 +15,12 @@ weaknesses:
 - component: tool
   surface:
   - model-output
-  text: A tool sends data to a destination outside the perimeter, with the destination taken from the model's own arguments. Whatever is in the context can leave by that route. For example, a public web-search query containing internal data.
+  text: A tool sends data to a destination outside the perimeter, with the destination taken from the model's own arguments. Whatever is in the context can leave by that route.
+  nature: targeted
+- component: tool
+  surface:
+  - model-output
+  text: A tool sends model-composed requests to a fixed, approved destination outside the perimeter - a public web search, an external translation or inference service - so internal data in the context leaves inside the request through an endpoint the allowlist permits.
   nature: targeted
 - component: tool
   surface:
@@ -56,7 +61,6 @@ weaknesses:
   text: The request assembler selects an inference recipient independently of the data processing restriction, or evaluates a wrong source label, overly broad rule or incorrectly bound destination, so the assembled payload passes a technical allow decision while violating the applicable recipient or purpose restriction.
   nature: targeted
 - component: model
-  surface: []
   text: The runtime appends confidential metadata or credentials to model-visible request fields without including those fields in the data classification of the outgoing request.
   nature: targeted
 reachability: There is no data under differentiated authorization anywhere in the agent's context or reach - everything it can read is already available to any recipient of its output and to any destination its tools can send to. Recipients include inference processors and fallback endpoints; the condition also covers hidden request fields, restored memory, later tasks and restrictions on the processing purpose, not merely a successful technical allow decision.
