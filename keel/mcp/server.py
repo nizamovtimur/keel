@@ -76,10 +76,33 @@ def run_http() -> None:
     import uvicorn
     from contextlib import asynccontextmanager as _asynccontextmanager
     from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+    from mcp.server.transport_security import TransportSecuritySettings
     from starlette.applications import Starlette
     from starlette.routing import Mount
 
-    session_manager = StreamableHTTPSessionManager(app=server, stateless=True)
+    host = settings.mcp_http_host
+    if host not in ("127.0.0.1", "localhost", "::1") and not settings.mcp_http_allow_remote:
+        print(
+            f"Refusing to listen on {host}: the HTTP transport exposes the write tools "
+            "with no login, so it binds to loopback unless told otherwise. Set "
+            "MCP_HTTP_ALLOW_REMOTE=true if reaching it from another machine is intended.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
+    # A request has to name this server by one of the allowed hosts, and a browser has
+    # to be coming from one of them. Same reasoning as in keel.main: loopback is
+    # reachable from any page the user has open unless the name is checked.
+    names = settings.allowed_hosts
+    security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[*names, *(f"{n}:*" for n in names)],
+        allowed_origins=[f"{scheme}://{n}{port}" for n in names
+                         for scheme in ("http", "https") for port in ("", ":*")],
+    )
+    session_manager = StreamableHTTPSessionManager(
+        app=server, stateless=True, security_settings=security
+    )
 
     async def handle_streamable_http(scope, receive, send):
         await session_manager.handle_request(scope, receive, send)
@@ -102,10 +125,16 @@ def run_http() -> None:
 
 
 def main():
-    """Entry point. `validate` checks the catalog YAML, `schema` regenerates the JSON
-    Schema files, `style-guide export|import` moves the whole guide in bulk, `--http`
-    selects Streamable HTTP, and no args runs the stdio MCP server."""
+    """Entry point. `up` and `down` start and stop the UI in the background,
+    `validate` checks the catalog YAML, `schema` regenerates the JSON Schema files,
+    `style-guide export|import` moves the whole guide in bulk, `--http` selects
+    Streamable HTTP, and no args runs the stdio MCP server."""
     args = sys.argv[1:]
+    if args and args[0] in ("up", "down"):
+        from keel.up import main as up_main
+
+        up_main(args)
+        return
     if args and args[0] == "schema":
         from keel.schema_export import DEFAULT_SCHEMA_DIR, schemas_are_fresh, write_schemas
 

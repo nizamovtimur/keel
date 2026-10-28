@@ -4,10 +4,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings from environment variables."""
 
-    # Read-only REST API + browse UI
-    api_host: str = "127.0.0.1"
-    api_port: int = 8000
-    debug: bool = False
+    # Browse UI + REST, as started by `keel up`. Only the port is a setting. The address
+    # is not: this API writes files and has no login, so `keel up` binds it to loopback
+    # and offers no way to say otherwise. (Env var: UI_PORT.)
+    ui_port: int = 8420
+
+    # The names a request may arrive under (env var: ALLOWED_HOSTS, a JSON list).
+    # Listening on loopback is half of "local only". The other half is a web page in the
+    # user's own browser, which can reach loopback too: it points a name it controls at
+    # 127.0.0.1 and then talks to this server as if it were its own. A request that did
+    # not ask for one of these names is refused before it reaches a route. Add the public
+    # name here when Keel is deliberately served behind one.
+    allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
 
     # Optional GitHub repo URL (e.g. https://github.com/org/keel). When set, the UI
     # offers an "Edit on GitHub" link on save. Env var: REPO_URL. Empty = link hidden.
@@ -27,6 +35,12 @@ class Settings(BaseSettings):
     mcp_server_version: str = "0.1.0"
     mcp_http_port: int = 8001
     mcp_http_host: str = "127.0.0.1"
+    # `keel --http` refuses any other address than loopback unless this is set (env var:
+    # MCP_HTTP_ALLOW_REMOTE). The HTTP transport exposes the write tools with no login,
+    # so reaching it from another machine has to be something someone decided, not
+    # something a copied .env did. The container sets it, and publishes the port on the
+    # host's loopback only.
+    mcp_http_allow_remote: bool = False
 
     # extra="ignore" so a stray var in .env (e.g. a leftover DATABASE_URL) never crashes startup.
     model_config = SettingsConfigDict(

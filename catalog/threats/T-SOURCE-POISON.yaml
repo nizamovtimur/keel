@@ -3,6 +3,7 @@ title: A source the agent treats as authoritative was written by an untrusted ha
 harm: wrong-decision
 source:
 - external-attacker
+- supply-chain
 - error
 - accident
 weaknesses:

@@ -3,7 +3,7 @@ title: A tool with network egress connects to an address the model supplied, fro
 harm: code-execution
 source:
 - external-attacker
-- hallucination
+- model-mistake
 weaknesses:
 - component: tool
   surface:

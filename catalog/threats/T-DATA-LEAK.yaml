@@ -3,7 +3,8 @@ title: Data the agent may read reaches an audience that may not
 harm: data-exposed
 source:
 - external-attacker
-- hallucination
+- model-mistake
+- model-overeager
 - error
 - accident
 weaknesses:

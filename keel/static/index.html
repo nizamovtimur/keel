@@ -3634,15 +3634,17 @@ function reportFindingHtml(f, fi) {
       : esc(level);
     return `<span class="sev ${quiet ? "quiet " : ""}sev-${esc(level)}"><span class="p">${kind}</span>${inner}</span>`;
   };
-  // The chain the grades rest on. asset / vulnerability / delta and the attacker's motive
+  // The chain the grades rest on. asset / vulnerability / delta and the source's motive
   // and access are all in the report and none of them used to reach the screen, so a
   // reader had a severity with nothing behind it.
   const row = (k, path, v) => (reportEditable() || (v || "").toString().trim())
     ? `<dt>${k}</dt><dd>${rProse(path, v, "")}</dd>` : "";
   const chain = row("Asset", `findings.${fi}.asset`, f.asset)
     + row("Weakness", `findings.${fi}.vulnerability`, f.vulnerability)
-    + row("Attacker", `findings.${fi}.source.motive`, f.source.motive)
-    + row("Their access", `findings.${fi}.source.access`, f.source.access)
+    // A source without an attacker has no goal: `motive` then holds what triggers it
+    // here, and `access` the permissions it acts with (method step 3).
+    + row("Goal or trigger", `findings.${fi}.source.motive`, f.source.motive)
+    + row("Access or permissions", `findings.${fi}.source.access`, f.source.access)
     + row("Since last time", `findings.${fi}.delta`, f.delta);
   // A finding names a threat. If it came from the catalog, that name is a way into it.
   const title = f.from_catalog
@@ -3894,7 +3896,7 @@ function buildReportMarkdown(rep, mitInfo, s) {
     if (s.chain) {
       lines.push(`- Asset: ${f.asset}`);
       lines.push(`- Weakness: ${f.vulnerability}`);
-      lines.push(`- Attacker: ${f.source.who} — ${f.source.motive}, via ${f.source.access}`);
+      lines.push(`- Source: ${f.source.who} — ${f.source.motive}, via ${f.source.access}`);
       lines.push("");
     }
     if (reqs.length) { lines.push(...reqs.map(reqLine), ""); }

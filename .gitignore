@@ -11,6 +11,9 @@ venv/
 
 # local Claude Code settings (keep skills, drop personal/local config)
 .claude/settings.local.json
+# the same for Codex: a hook that runs code at session start is a personal choice, not
+# something a clone should do to whoever opens it
+.codex/hooks.json
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -19,3 +22,8 @@ build/
 
 # Assessment runs are local: real system names and findings, never committed.
 reports/
+
+# generated demo artefacts
+docs/demo/.deck-preview.html
+docs/demo/clips/*.mp4
+docs/demo/keel-demo.pptx

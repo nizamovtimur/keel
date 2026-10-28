@@ -40,7 +40,7 @@ fields:
     purpose: Who or what drives the threat.
     content_requirements:
     - Values from catalog/source.yaml.
-    - Include non-attacker causes (hallucination / error / accident) when the threat is real without an attacker.
+    - Include non-attacker causes (model-mistake / model-overeager / error / accident) when the threat is real without an attacker.
     avoid:
     - Attacker-only when the threat fires from a plain model mistake.
   reachability:

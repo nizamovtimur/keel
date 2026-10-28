@@ -1,0 +1,69 @@
+{
+  "skill_name": "assessing-genai-security",
+  "evals": [
+    {
+      "id": 1,
+      "name": "auto-mode-ban",
+      "prompt": "We're rolling out Claude Code to about 300 developers on company-managed macOS laptops. The sandbox is on, network allowlist is locked with allowManagedDomainsOnly, bypassPermissions is disabled. Our security team wants to also disable auto mode and require developers to approve every tool call by hand, because 'the classifier is just another model'. Developers have no production credentials on laptops. Assess whether banning auto mode reduces risk.",
+      "expected_output": "The assessment names the counterfactual (manual approval, with approval fatigue and the pull towards unsanctioned tools), credits auto mode only as a layer against overeagerness and honest mistakes, gives it zero weight against targeted injection, keeps the sandbox and egress lock as the boundary, and does not recommend the ban without naming what replaces it.",
+      "files": [],
+      "assertions": [
+        "The answer names what replaces auto mode if it is banned (manual approval by developers) and weighs it, rather than comparing the classifier with an ideal boundary",
+        "Auto mode is credited only as a layer inside the sandbox and egress boundary, never as the boundary",
+        "Auto mode gets zero weight against targeted prompt injection",
+        "Any vendor miss rate used is marked as transferred and paired with re-measuring on this organisation's logs",
+        "The answer separates overeagerness or honest mistakes from injection as sources of harm"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "injection-classifier-instead-of-approval",
+      "prompt": "Our support assistant reads incoming customer emails (RAG over the ticket history) and can send replies and issue refunds up to 200 EUR through an internal API. A vendor sells us a prompt-injection classifier that blocks 99.5% of attacks on their benchmark. Can we drop the human approval on refunds and rely on the classifier? Customers are external, anyone can email us.",
+      "expected_output": "Zero credit for the classifier against targeted injection by external senders; the static benchmark score is called out as a violation; refunds and outbound replies keep an architectural control outside the model; the human-approval question is answered with the bypass and fatigue cost named.",
+      "files": [],
+      "assertions": [
+        "The classifier gets zero weight against targeted injection from external email senders",
+        "The answer states that a score on a static benchmark does not establish the measure holds under adaptive attack",
+        "Refunds and sending replies keep a control outside the model (limits, approval, or narrower API), not the classifier",
+        "The threat is written as a scenario with source, asset, harm, and the attacker's real access"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "internal-ops-agent-prod-db",
+      "prompt": "Internal ops agent: only our SREs talk to it in Slack, it reads runbooks from Confluence and can run database migrations on the production Postgres through a service account with write rights. System prompt says 'never run destructive commands without confirmation'. Assess the risks. Inputs are internal, so injection is not really a concern.",
+      "expected_output": "The 'inputs are internal, injection is not relevant' claim is flagged as a violation; harm without an attacker (overeagerness, honest mistake) is analysed; the prompt instruction is not credited; the first recommendation is an architectural restriction (no direct prod write, migrations through a reviewed pipeline, backups) before any model-based layer.",
+      "files": [],
+      "assertions": [
+        "The claim that internal inputs make injection irrelevant is flagged",
+        "At least one threat comes from the model itself without an attacker (destructive action while solving the task)",
+        "The system-prompt instruction is not counted as a measure",
+        "The answer asks first whether an architectural restriction can remove direct production writes"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "insufficient-data",
+      "prompt": "Assess the security of our new AI assistant.",
+      "expected_output": "The data-sufficiency gate fires: the assessment stops at step 1 and asks for the missing facts (assets, trust boundaries, who introduces data, existing baseline and controls) instead of analysing on assumptions.",
+      "files": [],
+      "assertions": [
+        "No threat table is produced",
+        "The answer asks for concrete missing facts tied to step 1 (assets, trust boundaries, who introduces data, baseline)",
+        "The answer contains no threats built on assumed architecture"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "alignment-as-measure",
+      "prompt": "We give an agent built on a frontier model the ability to manage our AWS staging and production accounts (terraform apply). The model card reports that the model refuses destructive operations in 98% of safety eval cases. Can we list 'model safety training' as the main mitigation for accidental resource deletion in our risk register?",
+      "expected_output": "Safety training is treated as evidence about how often the model itself causes harm, only if that rate is measured on a similar distribution; it is not a boundary for an irreversible action; production apply keeps an architectural control (plan review, separate credentials, deletion protection).",
+      "files": [],
+      "assertions": [
+        "Safety training is not accepted as the main mitigation for an irreversible action",
+        "The 98% figure is questioned as a vendor number on a different distribution",
+        "The answer proposes an architectural control for production apply or deletion"
+      ]
+    }
+  ]
+}

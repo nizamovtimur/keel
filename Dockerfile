@@ -23,5 +23,9 @@ USER appuser
 
 EXPOSE 8000
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
-# Default: read-only REST + browse UI at http://localhost:8000/
+# Default: REST + browse UI at http://localhost:8000/
+# 0.0.0.0 here is the container's own network namespace, which is the only way a published
+# port can reach the process. What the host exposes is set where the port is published:
+# docker-compose.yml publishes on 127.0.0.1, and `docker run -p 127.0.0.1:8000:8000` does
+# the same by hand.
 CMD ["uvicorn", "keel.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,6 @@
+[mcp_servers.keel]
+command = "python"
+args = [
+    "-m",
+    "keel.mcp.server",
+]

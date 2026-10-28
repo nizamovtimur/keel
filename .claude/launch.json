@@ -3,8 +3,7 @@
   "configurations": [
     {
       "name": "keel-web",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "uvicorn", "keel.main:app", "--port", "8420", "--reload"],
+      "url": "http://localhost:8420",
       "port": 8420
     }
   ]

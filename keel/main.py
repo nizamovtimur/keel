@@ -1,11 +1,14 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from keel.config import settings
 from keel.errors import KeelError
 
 from keel.routes.library import router as library_router
@@ -32,13 +35,35 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# No CORS headers, on purpose. The UI is served by this app, so it is same-origin and
+# needs none. This used to allow every origin, which let any page open in the user's
+# browser read the catalog and the assessment reports and write to both: the server
+# listened on loopback and was reachable from the whole web through the browser.
+# Without the headers the browser refuses such a page the answer.
+#
+# A write is refused here rather than left to the browser. A browser says where a
+# request came from in `Origin`, and a page cannot forge it, so a write that names an
+# origin other than this app is turned away before it reaches a route. A request with no
+# `Origin` did not come from a page - it is a script or a test - and is let through.
+
+
+@app.middleware("http")
+async def refuse_writes_from_other_sites(request: Request, call_next):
+    origin = request.headers.get("origin")
+    if origin and request.method not in ("GET", "HEAD", "OPTIONS"):
+        if urlsplit(origin).hostname not in settings.allowed_hosts:
+            return JSONResponse(
+                status_code=403,
+                content={"error": "this request came from another site", "success": False},
+            )
+    return await call_next(request)
+
+
+# The host check closes what is left: a page that points its own name at 127.0.0.1 is
+# same-origin as far as the browser can tell, but it has to ask for that name. Added
+# last, so it runs first.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+
 
 @app.exception_handler(KeelError)
 async def keel_error_handler(request: Request, exc: KeelError) -> JSONResponse:
@@ -55,7 +80,17 @@ app.include_router(library_router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "0.1.0"}
+    """`service`, `pid` and `catalog` are for `keel up` and `keel down`: whatever
+    answers on the port has to be recognisable as Keel, serving this catalog, before it
+    is reused, and it is stopped by the pid it reports rather than by one remembered in
+    a file that may have outlived it."""
+    return {
+        "status": "ok",
+        "version": "0.1.0",
+        "service": "keel",
+        "pid": os.getpid(),
+        "catalog": str(get_store().dir.resolve()),
+    }
 
 
 # Minimal browse-and-edit UI: one static file, no assets, no build step.

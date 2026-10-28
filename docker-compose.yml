@@ -1,11 +1,16 @@
-# Browse UI + read-only REST:  docker compose up            -> http://localhost:8000/
+# Browse UI + REST:            docker compose up            -> http://localhost:8000/
 # Add the HTTP MCP transport:  docker compose --profile mcp up
+#
+# Both ports are published on the host's loopback only. Neither service has a login and
+# both can write the catalog, so they are not put on the network by default. To serve
+# Keel to other machines, put something that authenticates in front of it and add the
+# name it is reached by to ALLOWED_HOSTS.
 services:
   keel:
     build: .
     image: keel:latest
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   keel-mcp:
     build: .
@@ -13,6 +18,10 @@ services:
     profiles: ["mcp"]
     command: ["keel", "--http"]
     environment:
+      # Inside a container the process has to listen on every interface to be reachable
+      # through a published port at all; which host interface that port is published on
+      # is decided two lines down.
       - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_ALLOW_REMOTE=true
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"

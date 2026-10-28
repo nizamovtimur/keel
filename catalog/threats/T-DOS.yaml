@@ -3,7 +3,7 @@ title: Unbounded input or an unbounded loop consumes what others need
 harm: downtime
 source:
 - external-attacker
-- hallucination
+- model-mistake
 - accident
 weaknesses:
 - component: model

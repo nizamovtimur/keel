@@ -5,12 +5,18 @@ The important one is `catalog_dir`: a factory that writes a throwaway catalog un
 into `catalog/` — a test bound to the real catalog stops testing its check and starts
 locking the catalog's current state in place, so it fails the day the content is fixed.
 """
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 import yaml
+
+# The test client addresses the app as "testserver". The app only answers to the names in
+# ALLOWED_HOSTS, and that name is not one of them outside tests, so it is added here,
+# before anything imports the settings.
+os.environ.setdefault("ALLOWED_HOSTS", '["testserver", "localhost", "127.0.0.1"]')
 
 REPO_CATALOG = Path(__file__).resolve().parent.parent / "catalog"
 

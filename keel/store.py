@@ -8,8 +8,10 @@ diff, whether it came from the UI, an MCP tool, or a text editor.
 """
 from __future__ import annotations
 
+import os
 import re
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +31,11 @@ _RESERVED = {
     *(f"com{i}" for i in range(1, 10)),
     *(f"lpt{i}" for i in range(1, 10)),
 }
+
+# How often a read may look at the disk to see whether someone else changed the catalog.
+# Looking is a hundred `stat` calls, a few milliseconds; a read path can ask for the store
+# a dozen times per request, so it is rationed rather than done every time.
+_FRESHNESS_INTERVAL = 0.5
 
 # NAME_MAX is 255 on ext4 and APFS; the id also has ".yaml" appended and sits inside a
 # path, so leave room. An id this long is a mistake regardless.
@@ -126,10 +133,17 @@ class Store:
         self.style_guide_entity: dict[str, dict[str, Any]] = {}
         self.vocabulary: dict[str, dict[str, Any]] = {}
         self.problems: list[dict[str, Any]] = []
+        self._seen: dict[str, tuple[int, int]] = {}
+        self._checked_at = 0.0
         self.reload()
 
     # -- loading ------------------------------------------------------------
     def reload(self) -> None:
+        # Stamped before reading, not after: a file that changes while the load is
+        # running then differs from the stamp and is picked up by the next check,
+        # instead of being stamped as seen without having been read.
+        self._seen = self._fingerprint()
+        self._checked_at = time.monotonic()
         self.problems = []
         self.threats = self._load_records("threats")
         self.mitigations = self._load_records("mitigations")
@@ -161,6 +175,51 @@ class Store:
         for msg in vocabulary_errors(self.dir):
             file, _, rest = msg.partition(": ")
             self._problem(file, None, None, None, rest, dropped=False)
+
+    # -- freshness ----------------------------------------------------------
+    # The catalog is files, and this process is rarely the only thing writing them: the
+    # MCP server and the UI are two processes, and an editor or a `git pull` is a third.
+    # Each used to keep the copy it loaded at startup, so a threat written over MCP did
+    # not exist in the UI until the UI was restarted - and the other way round.
+
+    def _fingerprint(self) -> dict[str, tuple[int, int]]:
+        """What the loaded files look like from outside: mtime and size of every file
+        `reload` reads, by name. The coverage matrix is not here because it is read from
+        disk on every use and has nothing in memory to go stale."""
+        seen: dict[str, tuple[int, int]] = {}
+        for sub in ("", "threats", "mitigations", "style_guide"):
+            try:
+                entries = list(os.scandir(self.dir / sub if sub else self.dir))
+            except OSError:
+                continue
+            for entry in entries:
+                if entry.name.endswith(".yaml") and entry.is_file():
+                    st = entry.stat()
+                    seen[f"{sub}/{entry.name}"] = (st.st_mtime_ns, st.st_size)
+        return seen
+
+    def _stamp(self, path: Path) -> None:
+        """Called after this process writes or deletes `path`: its own write is not news
+        to it. Only that one file is restamped, so a change someone else made in the
+        same half second still differs from the stamp and is still picked up."""
+        key = f"{path.parent.name}/{path.name}"
+        try:
+            st = path.stat()
+            self._seen[key] = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            self._seen.pop(key, None)
+
+    def refresh_if_changed(self) -> bool:
+        """Reload when the files differ from what was loaded. True if it reloaded."""
+        now = time.monotonic()
+        if now - self._checked_at < _FRESHNESS_INTERVAL:
+            return False
+        with self.lock:
+            self._checked_at = now
+            if self._fingerprint() == self._seen:
+                return False
+            self.reload()
+            return True
 
     # Cross-record integrity is deliberately NOT checked here. The store's question is
     # whether a record can be loaded at all, which one record can answer about itself.
@@ -254,12 +313,14 @@ class Store:
         path.parent.mkdir(parents=True, exist_ok=True)
         rec = _ordered(self.threats[threat_id], THREAT_ORDER)
         path.write_text(dump_yaml(rec), encoding="utf-8")
+        self._stamp(path)
 
     def write_mitigation(self, mitigation_id: str) -> None:
         path = self._path("mitigations", mitigation_id)
         path.parent.mkdir(parents=True, exist_ok=True)
         rec = _ordered(self.mitigations[mitigation_id], MITIGATION_ORDER)
         path.write_text(dump_yaml(rec), encoding="utf-8")
+        self._stamp(path)
 
     def write_style(self, entity_type: str) -> None:
         path = self._path("style_guide", entity_type)
@@ -270,6 +331,7 @@ class Store:
             payload["entity"] = entity          # the record first, then its parts
         payload["fields"] = self.style_guide.get(entity_type, {})
         path.write_text(dump_yaml(payload), encoding="utf-8")
+        self._stamp(path)
 
     def write_coverage(self, source_id: str, payload: dict[str, Any]) -> None:
         path = self._path("coverage", source_id)
@@ -281,17 +343,22 @@ class Store:
         return self._path("coverage", source_id)
 
     def delete_threat_file(self, threat_id: str) -> None:
-        self._path("threats", threat_id).unlink(missing_ok=True)
+        path = self._path("threats", threat_id)
+        path.unlink(missing_ok=True)
+        self._stamp(path)
 
     def delete_mitigation_file(self, mitigation_id: str) -> None:
-        self._path("mitigations", mitigation_id).unlink(missing_ok=True)
+        path = self._path("mitigations", mitigation_id)
+        path.unlink(missing_ok=True)
+        self._stamp(path)
 
 
 _store: Store | None = None
 
 
 def get_store() -> Store:
-    """Return the process-wide store, loading the catalog on first access.
+    """Return the process-wide store, loading the catalog on first access and again
+    whenever the files have changed underneath it.
 
     Honors `settings.catalog_dir` (env `CATALOG_DIR`) so the app can run against a
     throwaway copy of the catalog; empty falls back to the repo's own `catalog/`.
@@ -299,6 +366,8 @@ def get_store() -> Store:
     global _store
     if _store is None:
         _store = Store(resolve_catalog_dir())
+    else:
+        _store.refresh_if_changed()
     return _store
 
 

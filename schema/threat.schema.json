@@ -185,10 +185,13 @@
       "items": {
         "enum": [
           "external-attacker",
+          "supply-chain",
           "internal",
-          "hallucination",
           "error",
-          "accident"
+          "accident",
+          "model-mistake",
+          "model-overeager",
+          "model-own-goal"
         ],
         "type": "string"
       },

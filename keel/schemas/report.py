@@ -29,12 +29,23 @@ ReportStatus = Literal["draft", "final"]
 
 
 class SourceInfo(BaseModel):
-    """Who drives the threat, with the access and motive that make it realistic."""
+    """Who or what drives the threat, and what makes it realistic here.
+
+    The same two fields answer method step 3 for both kinds of source. For an attacker
+    (external, supply chain, insider, the model's own goal): the goal, and the real access
+    to the surface. For a source without one (model mistake, overeagerness, error,
+    accident): what triggers it in this system, and the permissions it acts with. Such a
+    source still has a trigger, so `motive` is never just "none".
+    """
 
     model_config = ConfigDict(extra="forbid")
     who: Source
-    motive: str
-    access: str
+    motive: str = Field(
+        ..., description="An attacker's goal; for a source without one, what triggers it in this system"
+    )
+    access: str = Field(
+        ..., description="An attacker's real access to the surface; for a source without one, the permissions it acts with"
+    )
 
 
 class RiskInfo(BaseModel):

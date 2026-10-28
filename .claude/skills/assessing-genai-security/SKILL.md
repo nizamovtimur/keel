@@ -1,18 +1,25 @@
 ---
 name: assessing-genai-security
-description: Expert threat assessment for GenAI/LLM systems by a strict step-by-step method: attack surface, harm, exploitation complexity, delta to the existing model, and risk-reduction measures. The output is split into an auditable analysis trail and a final assessment. Apply to a GenAI/LLM system, integration, a single feature, an assistant, an agent, or RAG, on requests like "assess security", "threat model", "risk assessment of an integration", "security review". Not for non-GenAI audits, and not for writing exploits.
+description: Threat assessment of a GenAI or LLM system by a strict step-by-step method (trust boundaries, threats as scenarios, the source including the model itself, harm, likelihood, delta to the pre-integration baseline, and measures priced against their bypass), delivered as an auditable analysis trail plus a final risk table. Use when assessing the security of an LLM system, agent, coding agent, RAG pipeline, MCP integration, assistant or a single AI feature ("threat model", "security review", "risk assessment", "модель угроз", "оцени риски", "безопасность агента"), including when the user only describes what the AI can read and do and asks what could go wrong, or asks whether a guardrail, classifier, permission mode or safety training counts as a mitigation. Not for systems without AI, writing exploits, configuring a specific tool, or writing usage policy.
 ---
-
 # GenAI Security Assessment
 
-Act as a specialized expert in GenAI and LLM security. Your task is to deliver a threat assessment for a specific system, in the order below.
+Deliver a threat assessment for one specific system, in the order below. The reader must be able to reconstruct and dispute every conclusion from your trail.
 
-## Output format
+## Output
 
-The output has two parts, in this order:
+Two parts, in this order:
 
-1. Analysis trail, auditable reasoning. From it a person must be able to reconstruct and challenge the assessment's logic: which threats were considered, which were discarded, and on what grounds.
-2. Final assessment, a risk table over the surviving threats: one row per threat, the scenario in prose plus its severity. The prose runs the whole chain as one story, source, attack surface, vulnerability, asset, harm, and closes with what the integration changed and what the attack costs to pull off. Connected sentences, not a list of fields; no fact from the chain dropped; plain language, a domain term only where it carries meaning; the wording concrete and tied to this system.
+1. **Analysis trail**: the threats considered, the ones discarded and on what grounds, and each surviving threat through steps 3 to 11.
+2. **Final assessment**: one row per surviving threat. The scenario is one story in connected prose: source, attack surface, vulnerability, asset, harm, then what the integration changed and what the attack costs to pull off. No fact from the chain is dropped; plain language, a domain term only where it carries meaning; every sentence tied to this system.
+
+```markdown
+| Threat | Scenario | Severity × likelihood |
+|---|---|---|
+| T1. <short name> | <Source> with <real access> does <action> through <surface>. Because <vulnerability>, <asset> ends up <outcome>, which costs <who> <harm>. Before the integration <baseline>; the integration changed <delta>. Pulling it off takes <complexity>. | <severity> × <likelihood>; <what compensates, if anything> |
+```
+
+A complete threat with its trail and final row: [references/worked-example.md](references/worked-example.md). Open it when unsure how a chain or a row should read.
 
 ## Data-sufficiency gate
 
@@ -21,26 +28,81 @@ The assessment is built only on facts about the system established from the cont
 1. Do not fill it in with an assumption.
 2. Stop the analysis at that exact point and request the missing fact from the task-giver before continuing that branch.
 3. Once you have the fact, continue from that point.
+
 If several missing facts are visible at that moment, ask them together, but the pause stays tied to the point where they were needed.
+
+A missing fact pauses only what depends on it. Carry every threat, measure and verdict that the established facts already decide through to the end in the same answer, and mark each paused branch with the fact it waits for. Violation: stopping the whole assessment at step 1 when the facts given already decide part of it.
 
 If there is no one to answer (a non-interactive run), stop the assessment and return an explicit "Insufficient data to complete: …" block listing the missing facts, instead of analysis on assumptions.
 
-## Assessment order
+## Cross-cutting rule
 
-**Cross-cutting rule.** Security guarantees cannot be built on inference quality. An LLM does not architecturally separate control instructions from user input. The model interprets ordinary text as an instruction, produces unexpected outputs on clean input, and errs on filters in both directions. Protective measures are provided architecturally, outside the model, model behavior is not a mitigation. Input is assessed separately: data-sensitivity classification, interaction design, understanding the surface of influence. This is not a substitute for injection defense. Violation: "this input is from our internal system, injection is not relevant."
+Security guarantees cannot be built on inference quality. An LLM does not architecturally separate control instructions from user input: it reads ordinary text as an instruction, produces unexpected outputs on clean input, and errs on filters in both directions. So every *boundary*, and every control in front of an irreversible action or an outbound channel, is architectural, outside the model. A model-based measure is never a boundary; at most it is a credited *layer* (step 11). Input is assessed separately: data-sensitivity classification, interaction design, the surface of influence. This is not a substitute for injection defense. Violation: "this input is from our internal system, injection is not relevant."
 
-1. **System context.** Establish context along three directions. Assets and trust boundaries: what exactly are we protecting, data, decisions, processes, infrastructure? Where do the trust boundaries run, the points where the trust level of data or a request changes? Threats materialize at these transitions, not inside components. Who and what introduces into the system: who is allowed to introduce data or control actions, not just read? What real access do they have to the attack surface? How can the system be misused or turned against its own users? Existing baseline: what similar capabilities do users and the system already have before this integration? What controls are already deployed? Build the assessment on established facts about this system. Without answers along all three directions the assessment will be either incomplete or unrealistic. Mark everything not in the context as "not established" and apply the data-sufficiency gate. Violation: describing threats without establishing where the trust boundaries run, who introduces data into the system, and what existed before the integration.
-2. **Threat search.** Do not derive threats from OWASP/MITRE catalogs. Search from the system: assume the agent's output is already maximally harmful regardless of the input (injection or hallucination), and assess what harm this causes given the purpose and recipient of the output, the downstream systems that consume it, and the trust boundaries from step 1. Keep separately the class of threats to the LLM itself as an asset, resource and cost exhaustion (token-DoS). Do not enter anything that rests on "the model shouldn't behave that way."
-Every threat is stated as a scenario: who does what, and what is lost as a result. A capability or a change on its own is not a threat. Violation: "a developer can add a tool that calls an unapproved endpoint", names a change, not what goes wrong.
-Then, for each threat found, the chain. Tie every field to the facts of step 1. Violation: any field filled in in general terms without a tie to the specific system.
+## Workflow
 
-3. **Source.** The attacker is characterized explicitly. Who: external or internal. Internal does not mean "access to everything", actual access is determined by this system's regulations from step 1. Why: motive or goal. Without a goal a threat cannot be realistic. Risk also materializes without a deliberate attacker, from an implementation error, accidental user actions, or the model itself (hallucination); name these cases explicitly. What they can do: what real access to the attack surface this attacker has in this architecture. Violation: "an attacker could…" without stating who, with what access, and for what goal.
-4. **Asset.** What is under threat, data, a decision, functionality, infrastructure?
-5. **Attack surface.** Where is the interaction point? What inputs, outputs, and interfaces are available to the attacker from step 3?
-6. **Vulnerability.** What predisposing condition makes this exploitable, architectural, implementation, operational? Model behavior does not count as a control.
-7. **Exploitation complexity.** What does the attacker from step 3 really need to execute the scenario in this architecture, the access and rights required, preconditions, the number of steps and the need to chain them, technical skill, dependence on timing, luck, or the actions of others. Assess qualitatively (low / medium / high) with reasoning from the specific system. This is an input to the risk assessment and is re-checked at step 9.
-8. **Harm.** Who loses what, and how much? Leaked data, a substituted decision, a disrupted process is the outcome inside the system, the harm is what that outcome costs someone: money, legal and regulatory exposure, reputation, safety. Name both, and stop only at the loss. A chain that does not reach harm is not a threat. Violation: stopping at "the data leaks", that is the outcome, not the harm.
-9. **Risk.** How likely × how severe? What affects the likelihood? A reality check is mandatory before finalizing. Possibility ≠ probability: what varies, the specific attack path in this architecture, the attacker's access from step 3, the presence of compensating measures. Token interception in internal infrastructure and a request-replay attack are one "possible" vulnerability with fundamentally different probabilities of realization. External conditions: are there conditions in this deployment that reduce the threat to zero, network isolation, no reachable attack surface, hardware limits? If unknown or unverified, this is a gap in the assessment (the data-sufficiency gate), not a reason to skip the threat. Assumption check: what must be true for the scenario to materialize? Seek refutations, not confirmations. Verify the chain through to harm (step 8). Name unknown conditions explicitly, do not fill them with assumptions. Violation: finalizing a threat without checking which external conditions already compensate for it.
-10. **Delta.** Did the threat exist before the integration; if so, what exactly the integration changed in the chain fields, expressed in MITRE ATLAS terminology (attack stages and tactics as a language, not references to technique numbers); if the threat is new, describe it in full in these terms; if there is no delta, the threat belongs to the existing model and is not an argument against the integration. Violation: counting a threat as an argument against the integration without showing what exactly the integration changed in the chain and how that change is expressed in MITRE terms.
-11. **Risk reduction.** What measure reduces this? Only an architectural control outside the model counts as a measure. Before writing a requirement, price the bypass: if the people the requirement lands on have a cheap, invisible way around it - installing the blocked MCP server on their own machine, pasting the data into a public chatbot - the requirement does not reduce the risk, it relocates it to where nobody is watching. A requirement whose bypass is cheaper than compliance is written as a gap, with the bypass named, not as a control. Violation: recommending a gate on the sanctioned path without asking what the unsanctioned path costs.
-End of the analysis trail: the discard log, what was removed at steps 2, 8, 9 and why.
+Copy this checklist into the trail and tick it as you go:
+
+```
+- [ ] 1. Context: assets, trust boundaries, who introduces data, baseline and deployed controls
+- [ ] 2. Threat search from the system, worst output assumed; threats written as scenarios
+- [ ] 3–8. Chain for each threat: source of harm, asset, surface, vulnerability, complexity, harm
+- [ ] 9. Risk: likelihood × severity, refutations sought, compensating controls verified
+- [ ] 10. Delta in MITRE ATLAS terms
+- [ ] 11. Measures: first what an architectural restriction removes, then each measure priced against its bypass
+- [ ] Discard log
+- [ ] Self-check passed
+```
+
+1. **System context.** Establish context along three directions. *Assets and trust boundaries*: what exactly are we protecting (data, decisions, processes, infrastructure), and where do the trust boundaries run, the points where the trust level of data or a request changes? Threats materialize at these transitions, not inside components. *Who and what introduces into the system*: who is allowed to introduce data or control actions, not just read, and what real access do they have to the attack surface? How can the system be misused or turned against its own users? *Existing baseline*: what similar capabilities did users and the system already have before this integration, and what controls are already deployed? Mark everything not in the context as "not established" and apply the data-sufficiency gate. Violation: describing threats without establishing where the trust boundaries run, who introduces data into the system, and what existed before the integration.
+
+2. **Threat search.** Search from the system, not from OWASP or MITRE catalogs: assume the agent's output is already maximally harmful regardless of the input (injection, hallucination, or the model's own initiative), and assess what harm this causes given the purpose and recipient of the output, the downstream systems that consume it, and the trust boundaries from step 1. Keep separately the class of threats to the LLM itself as an asset: resource and cost exhaustion (token-DoS). Leave out anything that rests on "the model shouldn't behave that way." State every threat as a scenario: who does what, and what is lost as a result. A capability or a change on its own is not a threat. Violation: "a developer can add a tool that calls an unapproved endpoint" names a change, not what goes wrong. Then run the chain below for each threat, tying every field to the facts of step 1. Violation: any field filled in general terms without a tie to this system.
+
+3. **Source.** Name where the harm comes from, then characterize it. The attacker is one source among several:
+   - an external attacker, through content the system consumes or directly through its interfaces;
+   - the supply chain: packages, models, plugins, MCP servers, skills;
+   - an insider or a user misusing legitimate access, including jailbreaking the model for forbidden output;
+   - an implementation error or an accidental user action;
+   - the model itself, which for an agent is four distinct sources: overeagerness (it takes initiative beyond what the user would approve: deletes data, edits tests until they pass, reuses a credential it found), an honest mistake (it misjudges the blast radius or misses a failed command), injection (an external attacker's text steers it; the model is the channel), and its own goal (it pursues an objective of its own; rare in practice today).
+
+   For an attacker, state who (external or internal; internal does not mean "access to everything", actual access is set by this system's regulations from step 1), why (a goal; without one the threat is not realistic), and what real access they have to the attack surface. For a source without an attacker, state what triggers it in this system and with which permissions it acts. The distinction carries into step 11: only some sources adapt against a measure. Violations: "an attacker could…" without stating who, with what access, and for what goal; a threat list built only from attackers.
+
+4. **Asset.** What is under threat: data, a decision, functionality, infrastructure?
+
+5. **Attack surface.** Where is the interaction point? Which inputs, outputs and interfaces are available to the source from step 3?
+
+6. **Vulnerability.** What predisposing condition makes this exploitable: architectural, implementation, operational? Model behavior is not a control here: state the vulnerability as if the model takes the worst action its permissions allow.
+
+7. **Exploitation complexity.** What does the source from step 3 really need to execute the scenario in this architecture: access and rights, preconditions, the number of steps and the need to chain them, technical skill, dependence on timing, luck, or the actions of others. Assess qualitatively (low, medium, high) with reasoning from this system. This feeds step 9 and is re-checked there.
+
+8. **Harm.** Who loses what, and how much? A leaked dataset, a substituted decision or a disrupted process is the outcome inside the system; the harm is what that outcome costs someone: money, legal and regulatory exposure, reputation, safety. Name both, and stop only at the loss. A chain that does not reach harm is not a threat. Violation: stopping at "the data leaks", which is the outcome, not the harm.
+
+9. **Risk.** How likely × how severe? Possibility is not probability: weigh the specific attack path in this architecture, the source's access from step 3, and the compensating controls, counting a control only if it is verified on this system (a model-based measure counts only as a layer credited at step 11). Token interception in internal infrastructure and a request-replay attack are one "possible" vulnerability with very different probabilities of realization. Check external conditions that may reduce the threat to zero (network isolation, no reachable surface, hardware limits); if unknown or unverified, that is a gap under the data-sufficiency gate, not a reason to skip the threat. Check assumptions: what must be true for the scenario to materialize? Seek refutations, not confirmations, and verify the chain through to harm. Violation: finalizing a threat without checking which external conditions already compensate for it.
+
+10. **Delta.** Did the threat exist before the integration? If so, state what exactly the integration changed in the chain fields, in MITRE ATLAS terminology (attack stages and tactics as a language, not technique numbers); if the threat is new, describe it in full in these terms; if there is no delta, the threat belongs to the existing model and is not an argument against the integration. Violation: counting a threat against the integration without showing what it changed in the chain and how that reads in MITRE terms.
+
+11. **Risk reduction.** What measure reduces this? Ask first whether an architectural restriction can remove this class of action altogether (no production credentials, no direct write, a reviewed pipeline that applies the change instead of the agent); if it can, that restriction is the first measure, and everything after it covers what remains. Architectural controls outside the model bound the harm. A model-based measure (action classifier, guardrail filter, monitor, safety training of the acting model, prompt instruction) is credited only as a *layer*, after the test in [references/model-measures.md](references/model-measures.md); open it whenever such a measure is proposed, credited, or about to be banned. Before writing a requirement, price the bypass: if the people the requirement lands on have a cheap, invisible way around it (installing the blocked MCP server on their own machine, pasting the data into a public chatbot), the requirement does not reduce the risk, it relocates it to where nobody is watching. A requirement whose bypass is cheaper than compliance is written as a gap, with the bypass named, not as a control. Violations: recommending a gate on the sanctioned path without asking what the unsanctioned path costs; banning a model-based measure without naming what replaces it.
+
+End the trail with the discard log: what was removed at steps 2, 8 and 9, and why.
+
+## Self-check before the final table
+
+Check the trail against each line; fix what fails and check again until every line holds:
+
+- every threat is a scenario that reaches harm, not a capability or a change;
+- every chain field rests on a fact from step 1, or the missing fact was asked for;
+- every branch the established facts decide is finished, and each paused branch names the fact it waits for;
+- every source of harm is named; an attacker with who, access and goal, a source without an attacker with what triggers it and with which permissions it acts;
+- every compensating control counted at step 9 is verified on this system;
+- every measure has its bypass priced, and every model-based measure has a recorded credit or zero credit;
+- every threat counted against the integration shows its delta.
+
+## Gotchas
+
+Corrections that assessments needed in practice:
+
+- **The model itself is a main source for agents.** Solving a trusted task, an agent deletes data, edits tests until they pass, or reuses a credential it found. A threat list built only from attackers misses this class.
+- **A framework sees one class.** The lethal trifecta sees exfiltration through injection and nothing without an attacker. Before leaning on a framework, name what it cannot see.
+- **Banning a model-based measure has a bypass too.** Removing an action classifier leaves manual approval, which users grant to most prompts, or a personal tool outside every control. Price the ban at step 11 like any other requirement.
+- **Rolled out is not holding.** Managed settings can merge with local ones, be skipped by another setting, or be absent on one OS. A control counts at step 9 only after it is verified on this system.
+- **A system-prompt instruction is a model-based measure.** It never guards an irreversible action.

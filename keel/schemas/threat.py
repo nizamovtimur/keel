@@ -27,8 +27,13 @@ Surface = Literal[
 # arrived, and from `component`, which is where it landed — three questions, three
 # fields. `training-data` used to sit here and was the odd one out: it is a channel,
 # not an origin. Poisoned training data is an external-attacker arriving through the
-# training-data surface at the model.
-Source = Literal["external-attacker", "internal", "hallucination", "error", "accident"]
+# training-data surface at the model. Injection is the same: an external-attacker, with
+# the model as the channel. The model as a source in its own right is the `model-*`
+# values, after step 3 of the assessing-genai-security method.
+Source = Literal[
+    "external-attacker", "supply-chain", "internal", "error", "accident",
+    "model-mistake", "model-overeager", "model-own-goal",
+]
 Nature = Literal["targeted", "secondary"]
 Strength = Literal["gating", "soft"]
 
