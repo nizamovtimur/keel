@@ -21,7 +21,7 @@ weaknesses:
   - retrieved-content
   - memory
   - agent-message
-  text: The model is steered by free-form text it read from a tool into emitting code or markup of someone else's choosing, which then travels to the sink or the renderer like any other output. The same steering path can originate in retrieved documents, restored memory or another agent's message.
+  text: The model is steered by free-form text it read - a tool's output, a retrieved document, restored memory, another agent's message - into emitting code or markup of someone else's choosing, which then travels to the sink or the renderer like any other output.
   nature: targeted
 reachability: The agent's output is text for a human only - nothing downstream executes it and nothing renders it as active content.
 mitigations:

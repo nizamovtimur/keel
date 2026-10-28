@@ -30,7 +30,6 @@ weaknesses:
   text: Persisted instructions are reintroduced into a later task and the execution layer accepts the resulting state-changing call without binding it to the current task authorization; approval or authority inferred from the earlier conversation is reused.
   nature: targeted
 - component: identity-store
-  surface: []
   text: The execution identity retains write privileges beyond the task it serves, so a steered or mistaken call can alter unrelated production resources.
   nature: secondary
 - component: tool
@@ -49,7 +48,6 @@ weaknesses:
   text: The execution API can set a protected record to approved or apply its change without atomically checking the recorded validation result and approval for that exact object version. A caller permitted to invoke the endpoint can therefore skip the required check or reuse approval obtained before the content changed.
   nature: targeted
 - component: identity-store
-  surface: []
   text: One effective principal can submit and approve the same protected change, including through two agents or credentials for separate systems. The approval service counts different agent names or credentials as independent approvers without resolving their common initiator, so a change requiring an independent reviewer is self-approved.
   nature: targeted
 reachability: The reachable tools have no operations with real consequences - reads, or writes to state the session discards - or the model influences neither the choice of tool nor its arguments, as in a rigidly predefined pipeline. Count operations reached through delegation and instructions restored from memory in a later task, including changes whose validity requires prior checks or independent approval.

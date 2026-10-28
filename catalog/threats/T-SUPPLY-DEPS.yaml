@@ -14,7 +14,12 @@ weaknesses:
 - component: tool
   surface:
   - tool-output
-  text: A tool reached through a dynamic registry or a third party is substituted, with no integrity or authenticity check between registration and use, and the substitute runs with the tool's access. An already connected remote service can also change its implementation through an update or compromise while retaining its registered name and endpoint; a pinned client configuration does not freeze that implementation.
+  text: A tool reached through a dynamic registry or a third party is substituted, with no integrity or authenticity check between registration and use, and the substitute runs with the tool's access.
+  nature: targeted
+- component: tool
+  surface:
+  - tool-output
+  text: An already connected remote tool or server changes its implementation through an update or a compromise while keeping its registered name and endpoint, and nothing on the client side notices, because pinning the configuration does not pin what runs behind it.
   nature: targeted
 - component: tool
   surface:

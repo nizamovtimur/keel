@@ -16,12 +16,17 @@ weaknesses:
 - component: model
   surface:
   - user-input
-  text: Input is processed without any limit on the work it can trigger, so a payload designed to cause recursion or heavy processing can arrive through an unsanitized channel and cause repeated output, hidden over-reasoning, retries, and fallback calls. For example, sponge tokens or novel attacks.
+  text: A short input triggers unbounded work on the output side - long or repeated generation, hidden reasoning, retries and fallback calls - and none of it is counted against a limit the caller can hit, so a sponge-style prompt costs far more than its size suggests.
   nature: targeted
 - component: tool
   surface:
   - agent-message
-  text: Agents delegate to one another, or a tool loop runs, with no limit on depth or iteration count, so a cycle or a runaway plan consumes compute and queue capacity until something outside it stops. Even individually bounded calls can exhaust an operation allocation when delegated branches receive independent budgets rather than sharing one cumulative allocation.
+  text: Agents delegate to one another, or a tool loop runs, with no limit on depth or iteration count, so a cycle or a runaway plan consumes compute and queue capacity until something outside it stops.
+  nature: targeted
+- component: tool
+  surface:
+  - agent-message
+  text: Delegated branches each get their own step or token budget instead of drawing on one allocation for the operation, so every call stays within its bound while the operation as a whole exhausts the pool.
   nature: targeted
 - component: model
   surface:
