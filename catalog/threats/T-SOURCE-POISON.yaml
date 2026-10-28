@@ -15,12 +15,12 @@ weaknesses:
 - component: memory
   surface:
   - memory
-  text: The shared memory of a multi-agent system accepts writes without verification, so what one write put there shapes every later decision until someone removes it by hand.
+  text: The persistent memory accepts writes without verification, so what one write put there shapes every later decision until someone removes it by hand. Content from an earlier untrusted task could be restored as established knowledge.
   nature: targeted
 - component: tool
   surface:
   - tool-output
-  text: A tool reached through a dynamic registry or a third party, with no integrity or authenticity check on the way, returns false data that the agent takes as fact.
+  text: A tool reached through a dynamic registry or a third party, with no integrity or authenticity check on the way, returns poisoned data that the agent takes as fact.
   nature: targeted
 - component: tool
   surface:
@@ -32,17 +32,17 @@ weaknesses:
   - agent-message
   text: In a multi-agent chain, one node's tainted output is accepted by the next as established fact and amplified at each step, so a single bad input becomes the chain's conclusion.
   nature: targeted
-reachability: Every source the agent reads was fixed before deployment and is written to by nothing at runtime - no ingestion, no shared memory, no peer results - or the agent reads no external source at all.
+reachability: Every source the agent reads was provenance-verified, fixed before deployment, and immutable for the deployment lifetime. No runtime ingestion or indexing; persistent/shared memory is absent or read-only with seed content passing the same pre-deployment provenance check; and no dynamic tool registry, third-party tool output, or peer-agent message can introduce or alter content the agent treats as authoritative—or the agent reads no external source at all.
 mitigations:
 - id: CTRL-DATA-VALIDATION
-  strength: gating
-  rationale: 'Closes the corpus weakness at ingestion: a document is validated against provenance and content rules before it is indexed, so what the agent later cites was checked on the way in rather than trusted for being there.'
+  strength: soft
+  rationale: 'Checks source and format at ingestion. It does not establish the truth of accepted material, so a valid document from an allowed source can still poison a decision.'
 - id: CTRL-RAG-INTEGRITY
-  strength: gating
-  rationale: 'Closes the corpus weakness after ingestion: embeddings and documents carry integrity anchors, so a document altered in the store is refused at retrieval rather than served.'
+  strength: soft
+  rationale: 'Rejects retrieval that differs from an accepted integrity-protected snapshot. False or malicious content already admitted into that snapshot remains possible, so integrity does not close source poisoning.'
 - id: CTRL-MEMORY-SANITIZATION
-  strength: gating
-  rationale: 'Closes the shared-memory weakness at the write: content is filtered before it is stored, so a poisoned entry never reaches the state later decisions read from.'
+  strength: soft
+  rationale: 'Screens content and write provenance before persistence. It does not close poisoning: an authorized source can be wrong and a semantic filter can miss an instruction or false premise.'
 - id: CTRL-MEMORY-VERSIONING
   strength: soft
   rationale: 'Lets a poisoned memory be rolled back once found. It does not close the threat: it restores state afterwards, so the decisions taken in between were taken on the poisoned version.'
@@ -77,6 +77,9 @@ references:
 - title: 'MCP Security Notification: Tool Poisoning Attacks'
   url: https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks
   note: 'The substituted-tool weakness demonstrated: a server can change a tool''s definition after the client approved it, and shadow a trusted server''s tool, with no integrity check between registration and use - shown against Cursor, where the agent then sent every email to the attacker regardless of the recipient the user named.'
+- title: 'SpAIware: persistent exfiltration through ChatGPT memory'
+  url: https://embracethered.com/blog/posts/2024/chatgpt-macos-app-persistent-data-exfiltration/
+  note: A researcher demonstrated website instructions stored in memory exfiltrating later conversations from the macOS app. The shipped fix blocked the image-fetch route, not memory poisoning itself; this establishes delayed disclosure, not arbitrary code execution.
 positioning: LLM04 (Data and Model Poisoning) covers this record's corpus and memory paths and also poisoning of the model's weights through training data, which lands on a different component and is not modelled here. LLM08 (Vector and Embedding Weaknesses) overlaps the corpus path and adds retrieval-side leakage, which is the neighbouring disclosure record's question.
 tags:
 - poisoning

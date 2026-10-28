@@ -6,6 +6,8 @@ source:
 - model-mistake
 - model-overeager
 - accident
+- internal
+- error
 weaknesses:
 - component: tool
   surface:
@@ -22,14 +24,42 @@ weaknesses:
 - component: tool
   text: The confirmation step is not differentiated by risk and is fed a stream of near-identical requests, so a critical write is approved mechanically along with the rest.
   nature: secondary
-reachability: The reachable tools have no operations with real consequences - reads, or writes to state the session discards - or the model influences neither the choice of tool nor its arguments, as in a rigidly predefined pipeline.
+- component: tool
+  surface:
+  - memory
+  text: Persisted instructions are reintroduced into a later task and the execution layer accepts the resulting state-changing call without binding it to the current task authorization; approval or authority inferred from the earlier conversation is reused.
+  nature: targeted
+- component: identity-store
+  surface: []
+  text: The execution identity retains write privileges beyond the task it serves, so a steered or mistaken call can alter unrelated production resources.
+  nature: secondary
+- component: tool
+  surface:
+  - model-output
+  text: A state-changing request is checked only against an agent or connector service identity, while the initiating principal's entitlement to that business operation and target is absent from the execution decision.
+  nature: targeted
+- component: tool
+  surface:
+  - agent-message
+  text: A delegated task replaces the initiating principal with the calling agent's identity, so a more privileged peer authorizes a state-changing operation that the original principal could not request directly.
+  nature: targeted
+- component: downstream
+  surface:
+  - model-output
+  text: The execution API can set a protected record to approved or apply its change without atomically checking the recorded validation result and approval for that exact object version. A caller permitted to invoke the endpoint can therefore skip the required check or reuse approval obtained before the content changed.
+  nature: targeted
+- component: identity-store
+  surface: []
+  text: One effective principal can submit and approve the same protected change, including through two agents or credentials for separate systems. The approval service counts different agent names or credentials as independent approvers without resolving their common initiator, so a change requiring an independent reviewer is self-approved.
+  nature: targeted
+reachability: The reachable tools have no operations with real consequences - reads, or writes to state the session discards - or the model influences neither the choice of tool nor its arguments, as in a rigidly predefined pipeline. Count operations reached through delegation and instructions restored from memory in a later task, including changes whose validity requires prior checks or independent approval.
 mitigations:
 - id: CTRL-RISK-BASED-APPROVAL
   strength: gating
-  rationale: 'Closes the first weakness for the tier that matters and the third weakness at the same time: a high-tier call does not run without a decision outside the model, and low-tier calls do not ask, so the person deciding sees only what deserves attention.'
+  rationale: 'Closes the first weakness for the tier that matters and the third weakness at the same time: a high-tier call does not run without a decision outside the model, and low-tier calls do not ask, so the person deciding sees only what deserves attention. This addresses the consent and approval-load paths; it does not establish the initiating principal''s business entitlement.'
 - id: CTRL-HUMAN-IN-LOOP
   strength: gating
-  rationale: 'Closes the first weakness for the critical subset: a financial, destructive or configuration action does not execute until a person has approved it. Everything outside that subset still runs on the model''s word, and the third weakness says what happens when the subset is drawn too wide.'
+  rationale: 'Closes the first weakness for the critical subset: a financial, destructive or configuration action does not execute until a person has approved it. Everything outside that subset still runs on the model''s word, and the third weakness says what happens when the subset is drawn too wide. Approval closes the missing-consent path for this subset, not missing business entitlement or object-specific prerequisites; a person can confirm an operation they have no right to perform.'
 - id: CTRL-HACT-CRITICAL
   strength: gating
   rationale: Closes the first weakness for irreversible and secret-touching actions regardless of any other setting - including a session-scoped grant or a fatigued approver - so the floor holds even when the tiering above it has been relaxed.
@@ -41,10 +71,10 @@ mitigations:
   rationale: 'Closes the first weakness for every tool not on the list: an agent that can only reach the tools it needs cannot be steered into one it does not, whatever the model produces.'
 - id: CTRL-SESSION-SCOPED-PERMS
   strength: gating
-  rationale: Closes the first weakness for any action category the user has not granted this session, by default-deny, and eases the third by asking once per category rather than per call. A category granted too broadly is the residual, which is what HACT exists for.
+  rationale: Closes the first weakness for any action category the user has not granted this session, by default-deny, and eases the third by asking once per category rather than per call. A category granted too broadly is the residual, which is what HACT exists for. The session grant cannot expand the initiating principal's business entitlement or replace required checks on the current object.
 - id: CTRL-AGENT-ISOLATION
-  strength: gating
-  rationale: 'Closes the first weakness for everything outside the perimeter: an agent that runs in a constrained environment cannot reach production state or the host, so a consequential call has nothing consequential to land on. Inside the perimeter the weakness stands.'
+  strength: soft
+  rationale: 'Limits direct access to resources excluded by the agent profile. Permitted production APIs and credentials can still perform unwanted state changes, so isolation does not close the threat.'
 - id: CTRL-APPROVAL-THROTTLING
   strength: soft
   rationale: 'Lowers the stream that produces the third weakness by rate-limiting and batching requests. It does not close the threat: fewer prompts are still prompts, and a critical action inside a batch is approved with the batch.'
@@ -81,6 +111,18 @@ mitigations:
 - id: CTRL-AUDIT-LOGGING
   strength: soft
   rationale: 'Records which call ran, with what arguments, on whose authority. It does not close the threat: it leaves a record of what happened, which is what an investigation needs and not a barrier.'
+- id: CTRL-PRIVILEGE-CONTROL
+  strength: soft
+  rationale: 'Narrows the execution identity resources and operations. It does not close the threat: a write within the remaining service scope can still exceed the initiator entitlement or lack consent.'
+- id: CTRL-MEMORY-SANITIZATION
+  strength: soft
+  rationale: 'Screens persisted instructions before reuse. It does not close the delayed-action path: a missed instruction still reaches the current task.'
+- id: CTRL-MEMORY-VERSIONING
+  strength: soft
+  rationale: Allows a planted instruction to be removed from future tasks. It does not undo writes that already ran from that memory.
+- id: CTRL-DELEGATED-AUTHORIZATION
+  strength: gating
+  rationale: Binds each delegated hop and final write to the verified originating principal entitlement or explicit bounded service delegation. It closes the excess-authority path; separate consent is still required where the operation lacks an autonomous grant.
 references:
 - title: Cursor-Opus agent snuffs out startup's production database
   url: https://www.theregister.com/2026/04/27/cursoropus_agent_snuffs_out_pocketos/
@@ -97,8 +139,26 @@ references:
 - title: 'ClawsBench: Evaluating Capability and Safety of LLM Productivity Agents in Simulated Workspaces'
   url: https://arxiv.org/html/2604.05172v1
   note: 'Measured: in a stateful workspace where writes persist, destructive over-action tasks - bulk-deleting mail, amending contracts under an explicit hold - produced unsafe-action rates from 7% to 23% across six frontier models, and the most capable model tied for the most unsafe actions. Capability and safety do not track together.'
+- title: ServiceNow agent discovery used for unauthorized cross-agent actions
+  url: https://appomni.com/ao-labs/ai-agent-to-agent-discovery-prompt-injection/
+  note: Published testing made a ticket-reading agent recruit other agents for unauthorized record changes and role grants. The vendor clarified configuration; the researcher recommended supervised tools and segregated teams. This was a demonstration, not a reported production intrusion.
+- title: 'ServiceNow: security for AI agents'
+  url: https://www.servicenow.com/docs/r/intelligent-experiences/aia-security-implementation.html
+  note: Vendor documentation distinguishes invocation ACLs from run-as authority and documents that a dedicated AI user can execute with elevated roles for a lower-privileged invoker. This establishes the deployment condition, not that every elevated service operation is unauthorized.
+- title: GitLab CODEOWNERS approval bypass, CVE-2024-0199
+  url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-16-9-2-released/
+  note: The vendor disclosed and patched a branch-based bypass of mandatory CODEOWNERS approval. It establishes a real process prerequisite being bypassed; an agent using the API is an applicability extension, not an AI incident reported by this source.
+- title: GitHub coding agent security boundaries
+  url: https://github.blog/news-insights/product-news/github-copilot-meet-the-new-coding-agent/
+  note: 'GitHub shipped restrictions preserving required review: the delegating developer cannot approve the agent''s pull request, and workflows need human approval. This is evidence of implemented actor separation, not evidence that its checks are infallible.'
 positioning: 'ASI02 (Tool Misuse and Exploitation) spans more than one harm: this record is state changed or destroyed through a legitimate tool; a read that should not have been served is the disclosure record; a shell or interpreter the model drives is the command-injection record, because what breaks there is that code ran. LLM06 (Excessive Agency) is wider again, covering the standing authority a call runs under, which is the borrowed-identity record.'
 tags:
 - agentic
 - tool-use
 - approval
+- authorization
+- delegation
+- downstream
+- workflow
+- separation-of-duties
+- business-process

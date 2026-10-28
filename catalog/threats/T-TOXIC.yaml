@@ -8,19 +8,20 @@ source:
 weaknesses:
 - component: downstream
   surface:
+  - model-output
   - training-data
   - retrieved-content
   - tool-output
-  text: Model output reaches a human audience as the organization's own voice, with nothing between generation and delivery that checks it for content the organization would not say - whether the content came from the training data, from a steered prompt or from a tool's free text.
+  text: Model output reaches a human audience as the organization's own voice, with nothing between generation and delivery that checks it for content the organization would not say - whether the content came from the training data, from a steered prompt or from a tool's free text. A present moderation layer can leave the same delivery path open when it misses a violation; the absence of a check is not the only case.
   nature: targeted
-reachability: The agent's output reaches no human recipients (no external or employee audience) for whom toxic content would carry reputational or legal consequences.
+reachability: The agent's output reaches no human recipients (no external or employee audience) for whom toxic content would carry reputational or legal consequences. Include audiences reached when a person republishes or forwards the generated content.
 mitigations:
 - id: CTRL-CONTENT-POLICY
-  strength: gating
-  rationale: Closes the weakness by defining what may not be said and enforcing it as a moderation layer at the output boundary, so content that violates the policy does not reach the audience whichever way it was produced.
+  strength: soft
+  rationale: Reduces delivery of detected content-policy violations. Missed violations can still reach the audience, so moderation does not close the threat.
 - id: CTRL-OUTPUT-VALIDATION
-  strength: gating
-  rationale: 'Closes the weakness mechanically: the reply is checked against the content policy before delivery and a violating reply is held. This is the one record where output validation gates, because the defect it looks for - content against policy - is exactly the harm.'
+  strength: soft
+  rationale: 'Rejects outputs outside a declared structural contract and can bound unrestricted output fields. Schema-valid offensive or unlawful text remains possible; contract validation does not close this threat.'
 references:
 - title: Grok's antisemitic rants the result of 'unintended update,' company says in letter to lawmakers
   url: https://suozzi.house.gov/media/in-the-news/groks-antisemitic-rants-result-unintended-update-company-says-letter-lawmakers

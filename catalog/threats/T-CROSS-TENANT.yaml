@@ -16,7 +16,7 @@ weaknesses:
   - tool-output
   text: A tool connection is shared across tenants and carries state of its own - a cache, a cursor, a connection-level context - so one tenant's result comes back on another tenant's call.
   nature: targeted
-reachability: The deployment serves a single tenant, or nothing the agent reads persists beyond the request that wrote it - there is no shared state for one party's data to be sitting in when another party's request arrives.
+reachability: The deployment serves a single authorization domain whose users have identical entitlements, or nothing the agent reads persists beyond the request that wrote it - and no in-flight context, connection state or batched result is mixed between those domains - there is no shared state for one party's data to be sitting in when another party's request arrives.
 mitigations:
 - id: CTRL-TENANT-ISOLATION
   strength: gating

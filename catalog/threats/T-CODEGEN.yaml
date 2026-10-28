@@ -18,16 +18,19 @@ weaknesses:
 - component: model
   surface:
   - tool-output
-  text: The model is steered by free-form text it read from a tool into emitting code or markup of someone else's choosing, which then travels to the sink or the renderer like any other output.
+  - retrieved-content
+  - memory
+  - agent-message
+  text: The model is steered by free-form text it read from a tool into emitting code or markup of someone else's choosing, which then travels to the sink or the renderer like any other output. The same steering path can originate in retrieved documents, restored memory or another agent's message.
   nature: targeted
 reachability: The agent's output is text for a human only - nothing downstream executes it and nothing renders it as active content.
 mitigations:
 - id: CTRL-SECURITY-GATES
-  strength: gating
-  rationale: 'Closes the executing-sink weakness for the CI path: SAST, secret scanning and IaC checks run on every change and a failing check blocks the merge, so generated code does not reach the pipeline that runs it unexamined.'
+  strength: soft
+  rationale: 'Requires revision-bound security checks before merge or release. Scanners and review can miss harmful code, so completing checks does not close the execution path.'
 - id: CTRL-CODE-SANDBOX
   strength: gating
-  rationale: 'Closes the executing-sink weakness for the eval and exec path: generated code runs with no host, network or secret access, so whatever it does, it does to the sandbox.'
+  rationale: 'Closes the executing-sink weakness for the eval and exec path: generated code runs with no host, network or secret access, so whatever it does, it does to the sandbox. This requires an enforced profile excluding the harmful resource, including access through host imports, granted APIs and credentials; effects within granted capabilities remain possible.'
 - id: CTRL-OUTPUT-ENCODING
   strength: gating
   rationale: 'Closes the rendering weakness: output is entity-encoded and escaped before it is rendered or passed on, so markup the model produced is displayed as text rather than executed by the browser.'
