@@ -594,10 +594,13 @@ entries:
 - ref: AML.T0081
   title: Modify AI Agent Configuration
   group: Persistence, Defense Evasion
-  state: gap
-  threats: []
-  mitigations: []
-  note: Waiting on the agent's own configuration - rules files, tool declarations, system prompt on disk - as a tamperable asset. Nothing names it as a component that persists between runs and can be rewritten.
+  state: covered
+  threats:
+  - T-SOURCE-POISON
+  - T-SUPPLY-DEPS
+  mitigations:
+  - CTRL-CONFIG-CHANGE-REVIEW
+  - CTRL-WORKSPACE-TRUST
 - ref: AML.T0082
   title: RAG Credential Harvesting
   group: Credential Access

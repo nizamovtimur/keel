@@ -7,7 +7,9 @@ from typing import Annotated, Literal
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, HttpUrl
 
 # --- frozen vocabularies (mirrored in catalog/{components,harm,surface,source}.yaml) ---
-Component = Literal["model", "tool", "downstream", "memory", "knowledge-base", "identity-store"]
+Component = Literal[
+    "model", "tool", "downstream", "memory", "knowledge-base", "identity-store", "config",
+]
 Harm = Literal[
     "wrong-decision", "data-integrity", "data-exposed", "code-execution",
     "downtime", "reputation-legal",

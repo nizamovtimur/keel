@@ -32,6 +32,9 @@ weaknesses:
 - component: tool
   text: Versions of tools, servers or models are resolved at runtime rather than pinned, so what ran yesterday is not necessarily what runs today, and no one chose the difference.
   nature: targeted
+- component: config
+  text: The runtime takes hooks, tool-server launch commands and other executable entries from the configuration of the directory it was started in, and they take effect before anyone has decided to trust that directory, so whoever wrote the repository chooses what runs with the developer's access.
+  nature: targeted
 - component: tool
   text: An in-process tool or extension shares the agent's address space with no isolation boundary, so a substituted component has the agent's full context, memory and credentials rather than its own slice.
   nature: secondary
@@ -76,6 +79,9 @@ mitigations:
 - id: CTRL-VERSION-PINNING
   strength: gating
   rationale: 'Closes the drift weakness directly: versions are fixed, so runtime resolution has nothing to resolve and what runs is what was reviewed.'
+- id: CTRL-WORKSPACE-TRUST
+  strength: gating
+  rationale: 'Closes the workspace-configuration weakness at load: executable entries the opened directory declares stay inert until that directory is trusted, and where policy removes the workspace as a source they never run, so cloning and opening a repository runs nothing its author chose.'
 - id: CTRL-EXTENSION-SANDBOX
   strength: gating
   rationale: 'Closes the isolation weakness for extensions: a substituted extension runs in a restricted environment and reaches only what the sandbox grants, not the agent''s context and credentials.'
@@ -101,6 +107,9 @@ references:
 - title: Security Update for Amazon Q Developer Extension for Visual Studio Code (AWS-2025-015)
   url: https://aws.amazon.com/security/security-bulletins/AWS-2025-015/
   note: 'Vendor bulletin for the extension-update weakness: an inappropriately scoped GitHub token in the build configuration let an attacker commit code into the official extension, which shipped to the marketplace as version 1.84.0 and auto-updated into users'' editors. It failed to run only because of a syntax error. The bulletin does not describe what the code was meant to do.'
+- title: Command execution prior to Claude Code startup trust dialog (CVE-2025-59536)
+  url: https://github.com/anthropics/claude-code/security/advisories/GHSA-4fgq-fpq9-mr3g
+  note: 'The workspace-configuration weakness as a vendor advisory: Claude Code before 1.0.111 could execute code contained in a project before the user accepted the startup trust dialog, and the only precondition was starting it in an untrusted directory. The advisory names the trust dialog as the boundary that failed, fixed in 1.0.111; it does not list which project entries executed.'
 positioning: 'LLM03 (Supply Chain) and ASI04 (Agentic Supply Chain) both include the provenance of training data and model weights, which lands on a different component and a different harm and is not this record. This record is the runtime half: what the agent loads and runs, whichever channel delivered it.'
 tags:
 - supply-chain

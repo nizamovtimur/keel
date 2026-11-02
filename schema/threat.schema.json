@@ -84,7 +84,8 @@
             "downstream",
             "memory",
             "knowledge-base",
-            "identity-store"
+            "identity-store",
+            "config"
           ],
           "title": "Component",
           "type": "string"

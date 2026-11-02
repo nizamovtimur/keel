@@ -1,0 +1,60 @@
+id: "CTRL-WORKSPACE-TRUST"
+name: "Workspace trust"
+mitigation_class: "gating_control"
+purpose: "Prevents a repository, branch or folder from changing what an agent runtime executes, where it sends requests or what it may do merely by being opened."
+formal_implementation_risk: "The trust prompt exists, but something the workspace declares acts before the answer: a server is initialised, an environment variable is applied, a request goes out to an address the workspace set. Signal: a startup trace in an untrusted folder shows a process spawn or an outbound connection before the prompt is answered."
+review: "Review when the runtime adds a configuration kind that executes, sets a destination or grants a permission, when trust moves from per-folder to another unit, or when a new non-interactive mode is added. Keep a periodic safety-net review alongside those triggers."
+locus:
+  value: "split"
+  note: "The hold-until-trusted gate lives in the runtime's configuration loader, so the runtime vendor builds it once for every user. Narrowing the workspace as a source on managed devices is policy the organisation delivers through device management. Without managed devices, the runtime half is all there is."
+scope: "Every agent runtime that reads configuration from the directory or repository it is started in. Within it, every workspace-supplied entry of these kinds:\n- executable: hooks, tool or server launch commands, helper scripts the runtime calls;\n- destination: model or API base addresses, proxies, endpoints for telemetry or credentials;\n- grant: permission rules, allowed tools, automatic approval of servers;\n- environment variables that set any of the above.\nInteractive and non-interactive runs are both in scope; a non-interactive run has no prompt to fall back on.\nTwo profiles, set by whether the device is centrally managed:\n- unmanaged: entries are held until the folder is trusted;\n- managed: executable entries and destinations from the workspace are refused outright, and trust re-enables only grants that policy allows."
+out_of_scope: "Instruction text the model reads from the workspace - rules and instruction files - is not executed by the runtime, and trusting the folder says nothing about whether that text is safe; review of changes to it is owner review of configuration changes. Code the user runs themselves after trusting the folder is not covered. Content that changes inside an already trusted folder, such as a pulled branch, is covered only where the runtime re-asks on change."
+control_mechanism: "The enforcement point is the runtime's configuration loader, before it starts any process or opens any connection. It classifies workspace-supplied entries by the kinds in scope and holds them inert until a trust decision for that path is recorded; until then the runtime starts with user-level and managed configuration only. Managed policy can remove the workspace as a source for executable entries and destinations altogether, so a trust decision cannot re-enable them on a managed device. A non-interactive run never infers trust: it runs with workspace entries disabled unless the pipeline owner passes an explicit flag naming the workspace."
+failure_behavior:
+  value: "fail_closed"
+  note: "When the trust record cannot be read, the prompt cannot be shown, or managed policy fails to load, the runtime starts without workspace-supplied entries and lists the ones it ignored. The value flips to fail_open where a runtime treats an unreadable managed policy as no restriction; the startup list of ignored entries is how either state is noticed."
+telemetry:
+  events:
+    - name: "workspace_config.held"
+      records: "Which workspace entries were kept inert because the folder was not trusted."
+      attributes:
+        - "workspace path"
+        - "entry kinds and digests"
+        - "run mode, interactive or not"
+    - name: "workspace_config.trusted"
+      records: "Who trusted the folder and what that enabled."
+      attributes:
+        - "user"
+        - "workspace path and revision"
+        - "entries enabled"
+    - name: "workspace_config.blocked_by_policy"
+      records: "Which workspace entries managed policy refused regardless of trust."
+      attributes:
+        - "workspace path"
+        - "entry kinds and digests"
+        - "policy version"
+  evidence: "Forwarded from the device to the organisation's log store and retained for the investigation window of a compromised workstation. A log the runtime writes inside the workspace is not evidence: the workspace author can write there too."
+anti_patterns:
+  - "The prompt is shown after the runtime has already started what the workspace declared. Signal: process or network activity in an untrusted folder before the answer."
+  - "Trust is recorded for a parent directory or the home directory, so every repository cloned beneath it is trusted on arrival. Signal: a freshly cloned repository produces no prompt."
+  - "Non-interactive runs apply workspace configuration without a prompt and without a flag. Signal: a headless run in an untrusted clone executes a workspace hook."
+validation:
+  - criterion: "Opening an untrusted workspace runs nothing it declares and contacts no address it sets."
+    test_scenario: "Start the runtime in a fresh clone that declares a hook, a tool server and a base-URL variable pointing at a listener you control; do not answer the prompt."
+    expected_result: "No hook or server process starts and the listener receives no connection."
+    base: true
+  - criterion: "A non-interactive run does not infer trust."
+    test_scenario: "Run the runtime headless in the same clone without the trust flag."
+    expected_result: "The run completes or fails with workspace entries ignored and listed; none of them executed."
+    base: true
+  - criterion: "Trust is held per folder, not inherited from a parent."
+    test_scenario: "Trust a parent directory, then clone a new repository beneath it and start the runtime there."
+    expected_result: "The new repository is treated as untrusted and its entries are held."
+    base: true
+  - criterion: "Managed policy outranks a trust decision."
+    test_scenario: "On a managed device with workspace hooks disabled by policy, trust the clone and start a session."
+    expected_result: "The workspace hook still does not run, and the refusal is recorded."
+    base: false
+faq: []
+requires: []
+implementations: []

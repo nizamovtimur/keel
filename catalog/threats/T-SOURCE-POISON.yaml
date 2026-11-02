@@ -17,6 +17,9 @@ weaknesses:
   - memory
   text: The persistent memory accepts writes without verification, so what one write put there shapes every later decision until someone removes it by hand. Content from an earlier untrusted task could be restored as established knowledge.
   nature: targeted
+- component: config
+  text: Rules and instruction files committed to a repository are loaded as standing instructions into every session that opens it, and a change to them merges like any other diff, so an instruction added in one pull request steers the agent of everyone who opens the repository afterwards.
+  nature: targeted
 - component: tool
   surface:
   - tool-output
@@ -46,6 +49,9 @@ mitigations:
 - id: CTRL-MEMORY-VERSIONING
   strength: soft
   rationale: 'Lets a poisoned memory be rolled back once found. It does not close the threat: it restores state afterwards, so the decisions taken in between were taken on the poisoned version.'
+- id: CTRL-CONFIG-CHANGE-REVIEW
+  strength: gating
+  rationale: 'Closes the committed-instruction weakness at merge: a change to an instruction or rules file cannot reach the default branch without approval from that file''s named owner, who is shown the change with hidden characters made visible, so a colleague''s next session loads only instructions someone with standing read.'
 - id: CTRL-AGENT-AUTHENTICATION
   strength: gating
   rationale: 'Closes the peer-agent weakness at the connection: an agent that cannot prove who it is does not get to supply results, so a stranger''s output never enters the chain as a colleague''s.'
@@ -80,7 +86,10 @@ references:
 - title: 'SpAIware: persistent exfiltration through ChatGPT memory'
   url: https://embracethered.com/blog/posts/2024/chatgpt-macos-app-persistent-data-exfiltration/
   note: A researcher demonstrated website instructions stored in memory exfiltrating later conversations from the macOS app. The shipped fix blocked the image-fetch route, not memory poisoning itself; this establishes delayed disclosure, not arbitrary code execution.
-positioning: LLM04 (Data and Model Poisoning) covers this record's corpus and memory paths and also poisoning of the model's weights through training data, which lands on a different component and is not modelled here. LLM08 (Vector and Embedding Weaknesses) overlaps the corpus path and adds retrieval-side leakage, which is the neighbouring disclosure record's question.
+- title: 'Rules File Backdoor: weaponizing code agents through compromised rule files'
+  url: https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents
+  note: 'The committed-instruction weakness: once a poisoned rules file is part of a repository it affects all later code generation by team members and survives forks, and the hidden Unicode carrying the instruction was also invisible in GitHub''s pull request approval view. Cursor and GitHub both answered that review is the user''s responsibility, so no vendor control shipped.'
+positioning: LLM04 (Data and Model Poisoning) covers this record's corpus and memory paths and also poisoning of the model's weights through training data, which lands on a different component and is not modelled here. LLM08 (Vector and Embedding Weaknesses) overlaps the corpus path and adds retrieval-side leakage, which is the neighbouring disclosure record's question. AML.T0081 (Modify AI Agent Configuration) splits by what the rewritten configuration does - instruction text the agent obeys lands here, an executable entry the runtime starts is the supply-chain record.
 tags:
 - poisoning
 - retrieval
