@@ -1,0 +1,50 @@
+id: "CTRL-BUILD-STATE-ISOLATION"
+name: "Build state isolation between trust levels"
+mitigation_class: "gating_control"
+purpose: "Prevents code left behind by a low-trust run - one that untrusted input can start or steer, such as an agent session - from executing later in a context that holds credentials the low-trust run never had."
+formal_implementation_risk: "Secrets are removed from the low-trust run, but the privileged pipeline still restores a cache, artifact or working tree that the low-trust run can write. Signal: a cache key or artifact name is written by a workflow untrusted input can trigger and read by a workflow holding publication or deployment credentials."
+review: "Review when a new workflow or agent run gains a trigger that untrusted input can fire, when a privileged pipeline adds a cache, artifact or shared volume, or when the build host changes how cache scope is assigned. Keep a periodic safety-net review alongside those triggers."
+locus:
+  value: "infrastructure"
+  note: "A property of the build and execution platform - cache scopes, runner pools, volume mounts - set where pipelines are defined. On a single developer machine the same split is between the agent's session and the person's own shell, and there it is a workstation arrangement rather than shared infrastructure."
+scope: "Every executor that holds credentials or rights a low-trust run does not: release and deployment pipelines, workflows with publication tokens, a developer's own shell and test runs. A run is low-trust if untrusted input can start it or steer it - an issue or comment trigger, a pull request from outside, an agent session reading external content. Applies to every kind of state that survives the run: caches, artifacts, working trees, shared volumes, package stores."
+out_of_scope: "Code the privileged executor fetches from a reviewed revision is in scope only to the extent that the revision's review is real; whether reviewed code is safe is security gates and code review. A low-trust run that itself holds the credential is not helped by isolating its state; that is the credential's scope."
+control_mechanism: "The enforcement point is the executor's start: it begins from a clean environment and a pinned, reviewed revision, and restores no cache, artifact or volume written by any run of lower trust. On build platforms this means separate cache scopes or no cache for credential-holding pipelines, separate runner pools, and artifacts passed only through a signed, provenance-checked channel. On a workstation it means tests and builds of an agent-touched tree run in an environment without the person's credentials until the change has been reviewed."
+failure_behavior:
+  value: "fail_closed"
+  note: "When the executor cannot establish that its inputs come from a reviewed revision or a provenance-checked artifact - missing attestation, unknown cache origin - it does not run. The value flips to degraded where a platform falls back to a shared cache on a miss; a run record that lists every restored input and its writer is how that is noticed."
+telemetry:
+  events:
+    - name: "executor.inputs_resolved"
+      records: "What the privileged executor started from."
+      attributes:
+        - "revision"
+        - "restored caches and artifacts with their writer"
+        - "credentials in scope"
+    - name: "executor.input_refused"
+      records: "Which input was refused for coming from a lower-trust run."
+      attributes:
+        - "input identifier"
+        - "writer run and its trigger"
+        - "refusal reason"
+  evidence: "The build platform's run records, kept outside the runners themselves and retained for the window in which a published artefact could be found compromised."
+anti_patterns:
+  - "Secrets are stripped from the low-trust run while a shared cache carries its output into the privileged one. Signal: one cache key is written by both."
+  - "Artifacts are passed between workflows by name with no provenance check. Signal: a privileged job downloads an artifact without verifying which run produced it."
+  - "The developer runs an agent's new tests in the same shell that holds production credentials. Signal: cloud or registry credentials are present in the environment of the first test run after an agent session."
+validation:
+  - criterion: "A low-trust run cannot place code into a privileged executor's start state."
+    test_scenario: "From a run triggered by an outside account, write a cache entry and an artifact under the names the release pipeline uses, then trigger the release pipeline."
+    expected_result: "The release pipeline restores neither and records the refusal."
+    base: true
+  - criterion: "The privileged executor starts only from reviewed inputs."
+    test_scenario: "Inspect the input record of a release run."
+    expected_result: "Every input is a reviewed revision or a provenance-checked artifact; nothing has an unknown writer."
+    base: true
+  - criterion: "Agent-touched code is first run without the person's credentials."
+    test_scenario: "After an agent session adds a test that reads environment variables and opens a network connection, run the test suite the normal way."
+    expected_result: "The test sees no personal or deployment credentials and its connection is refused."
+    base: false
+faq: []
+requires: []
+implementations: []

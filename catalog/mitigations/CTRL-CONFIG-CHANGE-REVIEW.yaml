@@ -1,0 +1,55 @@
+id: "CTRL-CONFIG-CHANGE-REVIEW"
+name: "Owner review of agent configuration changes"
+mitigation_class: "gating_control"
+purpose: "Prevents an instruction, rule or tool declaration that nobody responsible for it read from becoming standing configuration for every agent that opens a repository. A change to what agents are told or allowed reaches the shared branch only with the approval of whoever owns that file."
+formal_implementation_risk: "Owners are assigned and approval is required, but the review view renders the file as text with hidden characters invisible, so the owner approves an instruction they never saw. Signal: a test change carrying a zero-width or bidirectional character is approved with no warning shown."
+review: "Review when a runtime reads instruction or configuration from a new file name or location, when the repository host changes how it renders diffs, or when the set of owners for agent configuration changes. Keep a periodic safety-net review alongside those triggers."
+locus:
+  value: "infrastructure"
+  note: "Enforced by the repository host's branch protection and ownership rules, set once per organisation or repository. A team without a shared host - files passed around outside version control - has no merge to gate and needs another route."
+scope: "Every file in a repository that an agent runtime loads as its own configuration or standing instruction: rules and instruction files for every agent product in use, tool and server declarations, permission settings, hook definitions. The list is the union of what each runtime in use reads, not one vendor's file names. Applies to every branch that sessions are opened from by default."
+out_of_scope: "Edits the agent makes to these files during a session take effect in that session and the author's next one before any merge; that path is persistent memory, not change review. A repository the organisation does not control - a third-party clone - has no owner to approve; that is workspace trust. Review does not decide whether an approved instruction is wise, only that someone with standing read it."
+control_mechanism: "The enforcement point is the repository host's merge gate on the default branch and any branch sessions open from. Ownership rules map every agent-configuration path to named owners, and branch protection refuses a merge that changes such a path without an approving review from one of them. The review view renders invisible and bidirectional characters visibly, or the host refuses the change until they are removed. The rule is part of protected repository settings, so a contributor cannot widen it in the same change."
+failure_behavior:
+  value: "fail_closed"
+  note: "When the ownership file is invalid, an owner group is empty or the host cannot evaluate the rule, the merge is blocked. The value flips to fail_open where the host silently ignores an invalid ownership file; a periodic check that a test change to a configuration path is refused is how that is noticed."
+telemetry:
+  events:
+    - name: "agent_config.change_approved"
+      records: "Who approved which change to agent configuration."
+      attributes:
+        - "path"
+        - "change digest"
+        - "approving owner"
+        - "hidden characters present"
+    - name: "agent_config.change_blocked"
+      records: "Which change was refused and why."
+      attributes:
+        - "path"
+        - "author"
+        - "refusal reason"
+  evidence: "The repository host's audit log, retained for the lifetime of the repository's protected branches. The repository itself is not evidence: the change under review is part of it."
+anti_patterns:
+  - "Approval is required but hidden characters are not shown. Signal: an approved change contains zero-width or bidirectional characters."
+  - "Ownership covers one vendor's file name, and another agent in use reads a file nobody owns. Signal: a change to an unowned instruction file merges with no owner review."
+  - "The ownership rule lives in a file the same change can edit. Signal: one pull request both alters the rule and the configuration it protects."
+validation:
+  - criterion: "A change to any agent-configuration path cannot merge without owner approval."
+    test_scenario: "Open a pull request that edits each configuration path in scope, approved only by a non-owner."
+    expected_result: "Every one of them is blocked from merging."
+    base: true
+  - criterion: "Hidden characters are visible to the approver."
+    test_scenario: "Submit a change that adds an instruction hidden with zero-width and bidirectional characters."
+    expected_result: "The review view marks the characters or the host refuses the change."
+    base: true
+  - criterion: "The ownership rule cannot be changed by the change it governs."
+    test_scenario: "Open one pull request that edits the ownership rule to drop an owner and also edits the configuration file that owner covers."
+    expected_result: "The merge is blocked until the existing owner approves."
+    base: true
+  - criterion: "The scope matches every runtime in use."
+    test_scenario: "List the configuration files each agent product in use reads and compare with the ownership rule."
+    expected_result: "No file a runtime reads is missing from the rule."
+    base: true
+faq: []
+requires: []
+implementations: []

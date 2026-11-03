@@ -8,3 +8,4 @@ components:
   memory:         {kind: data-store,  name: Memory,              desc: "Short-term context and long-term / persistent memory."}
   knowledge-base: {kind: data-store,  name: Knowledge base,      desc: "RAG index / retrieved-knowledge store the agent owns."}
   identity-store: {kind: data-store,  name: Identity & tokens,   desc: "Credentials, tokens and privileges the agent holds."}
+  config:         {kind: data-store,  name: Agent configuration, desc: "What the runtime loads as the agent's own authority and persists between runs: settings, hooks, tool and server declarations, rules and instruction files. The files, not the prompt they become."}

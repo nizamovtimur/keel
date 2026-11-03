@@ -43,6 +43,9 @@ references:
 - title: Malicious repo configuration can trigger data leakage via environment configuration used before trust confirmation (CVE-2026-21852)
   url: https://github.com/anthropics/claude-code/security/advisories/GHSA-jh7p-qr78-84p7
   note: 'The crossing weakness as a disclosed CVE: a repository''s settings file set the API base URL, and Claude Code sent the user''s API key to that endpoint before showing the trust prompt - the credential crossed into an environment the attacker controlled. Fixed in 2.0.65 by deferring network calls until after trust is confirmed.'
+- title: Infostealer riding the AI train
+  url: https://research.checkpoint.com/2026/infostealer-riding-the-ai-train/
+  note: 'The crossing weakness as observed theft: a stealer analysed in October 2026 carries a dedicated module that collects the credential, session and configuration files of Claude, Codex, Cursor, Windsurf, Copilot and Gemini CLI from developer machines - .claude/credentials.json, .codex/auth.json, .gemini/.env - alongside AWS and SSO data. Check Point does not confirm how the operators use what they take.'
 positioning: 'ASI03 (Identity and Privilege Abuse) covers two chains that break differently. This record is one of them: someone other than the agent acts with the agent''s authority, ruled out when the agent has no authority of its own to borrow. The other - the agent misusing authority it legitimately holds - is ruled out by whether its tools can do anything consequential at all, and is the tool-action record.'
 tags:
 - identity

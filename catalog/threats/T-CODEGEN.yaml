@@ -15,6 +15,11 @@ weaknesses:
   - model-output
   text: The agent's output is rendered as HTML or Markdown in a user interface without escaping, so markup the model produced executes in the reader's browser.
   nature: targeted
+- component: downstream
+  surface:
+  - model-output
+  text: What an agent's session writes - files in the working tree, entries in a shared build cache - persists after the session and is later run by a more privileged executor, such as a developer's test run or a release pipeline, so code from a session that held no credentials executes with that executor's.
+  nature: targeted
 - component: model
   surface:
   - tool-output
@@ -31,6 +36,9 @@ mitigations:
 - id: CTRL-CODE-SANDBOX
   strength: gating
   rationale: 'Closes the executing-sink weakness for the eval and exec path: generated code runs with no host, network or secret access, so whatever it does, it does to the sandbox. This requires an enforced profile excluding the harmful resource, including access through host imports, granted APIs and credentials; effects within granted capabilities remain possible.'
+- id: CTRL-BUILD-STATE-ISOLATION
+  strength: gating
+  rationale: 'Closes the persisted-state weakness at the privileged executor: it starts from no state that a lower-trust run could write - no shared cache, no working tree an agent session touched - so what a session left behind never runs with the executor''s credentials.'
 - id: CTRL-OUTPUT-ENCODING
   strength: gating
   rationale: 'Closes the rendering weakness: output is entity-encoded and escaped before it is rendered or passed on, so markup the model produced is displayed as text rather than executed by the browser.'
@@ -62,6 +70,12 @@ references:
 - title: 'New Vulnerability in GitHub Copilot and Cursor: How Hackers Can Weaponize Code Agents'
   url: https://www.pillar.security/blog/new-vulnerability-in-github-copilot-and-cursor-how-hackers-can-weaponize-code-agents
   note: 'The steering weakness: instructions hidden with zero-width and bidirectional Unicode in a rules file made Cursor add a script tag from an attacker''s domain to generated HTML and say nothing about it. Both vendors answered that reviewing output is the user''s job - which is the record''s point.'
+- title: Clinejection - Compromising Cline's Production Releases just by Prompting an Issue Triager
+  url: https://adnanthekhan.com/posts/clinejection/
+  note: 'The persisted-state weakness end to end: any GitHub account could start Cline''s issue-triage agent, whose issue title went into the prompt and whose tools included Bash. The triage run held no release secrets, but it shared the default-branch Actions cache with the nightly release workflow, so cache entries planted from the triage run executed in the workflow holding the VS Code Marketplace, OpenVSX and npm publish tokens.'
+- title: 'Post-mortem: Unauthorized Cline CLI npm publish on February 17, 2026'
+  url: https://cline.bot/blog/post-mortem-unauthorized-cline-cli-npm
+  note: 'The vendor''s account and what shipped: a still-active npm token published cline@2.3.0 with an added postinstall script, live for about eight hours. Cline removed the AI triage workflows, removed Actions cache use from every workflow that handles publication credentials and moved npm publishing to OIDC - isolating the privileged pipeline''s state rather than filtering the prompt.'
 - title: Asleep at the Keyboard? Assessing the Security of GitHub Copilot's Code Contributions
   url: https://arxiv.org/abs/2108.09293
   note: 'Measures the model''s own error as a source: of 1,689 Copilot-generated programs across 89 scenarios, about 40% were vulnerable (IEEE S&P 2022). The insecure code exists before any sink runs it, which is why a gate between text and execution carries the load.'
