@@ -31,6 +31,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from urllib.parse import urlsplit
+
 import yaml
 from pydantic import ValidationError
 
@@ -359,6 +361,131 @@ def catalog_reference_errors(report: Report) -> list[str]:
     return errors
 
 
+def _evidence_url_error(url: str, commit: str | None) -> str | None:
+    """Why this permalink is refused, or None. Structure only: scheme, host, pin, anchor."""
+    from keel.config import settings
+
+    parts = urlsplit(url)
+    if parts.scheme != "https":
+        return "is not https"
+    host = (parts.hostname or "").lower()
+    allowed = {h.lower() for h in settings.evidence_hosts}
+    if host not in allowed:
+        return (f"points to {host or 'no host'}, which is not in evidence_hosts "
+                f"({', '.join(sorted(allowed)) or 'empty'})")
+    if parts.username or parts.password:
+        return "carries credentials"
+    if parts.query:
+        return "carries a query string; a permalink to lines needs none"
+    if not commit or commit not in parts.path.split("/"):
+        return "is not pinned to the entry's commit: a link to a branch moves"
+    if not parts.fragment:
+        return "has no line anchor: it should open at the lines, not at the file"
+    return None
+
+
+def structure_errors(report: Report) -> list[str]:
+    """Links inside a report that do not hold together. Refused on save.
+
+    Evidence ids, question ids and threat ids are how the parts of a report point at
+    each other; a pointer to nothing reads as support that is not there. A branch
+    waiting on a question that already has its answer is refused too: the answer is
+    in, so the branch is graded or discarded now, not left waiting.
+    """
+    errors: list[str] = []
+    ev_ids = [e.id for e in report.evidence]
+    for dup in sorted({i for i in ev_ids if ev_ids.count(i) > 1}):
+        errors.append(f"evidence: id {dup} is used more than once")
+    known_ev = set(ev_ids)
+    q_by_id = {q.id: q for q in report.open_questions}
+    if len(q_by_id) != len(report.open_questions):
+        errors.append("open_questions: a question id is used more than once")
+
+    for i, e in enumerate(report.evidence):
+        if e.url:
+            why = _evidence_url_error(e.url, e.commit)
+            if why:
+                errors.append(f"evidence[{i}] (id {e.id}): the link {why}")
+
+    def check_refs(refs: list[int], where: str) -> None:
+        for ref in refs:
+            if ref not in known_ev:
+                errors.append(f"{where}: evidence {ref} is not in the evidence list")
+
+    for i, f in enumerate(report.findings):
+        check_refs(f.evidence, f"findings[{i}]")
+    for i, d in enumerate(report.discarded):
+        check_refs(d.evidence, f"discarded[{i}]")
+
+    decided = {f.id for f in report.findings} | {d.id for d in report.discarded}
+    for i, p in enumerate(report.paused):
+        if p.id in decided:
+            errors.append(f"paused[{i}]: {p.id} is also graded or discarded; it is one of the three")
+        for qid in p.waiting_on:
+            q = q_by_id.get(qid)
+            if q is None:
+                errors.append(f"paused[{i}]: waits on {qid}, which is not in open_questions")
+            elif (q.answer or "").strip():
+                errors.append(
+                    f"paused[{i}]: {qid} has its answer, so {p.id} no longer waits - "
+                    "grade it as a finding or discard it by its reachability condition"
+                )
+    return errors
+
+
+def open_items(report: Report) -> list[str]:
+    """What still stands between this report and being finished. Blocks finalizing.
+
+    A question without an answer, a branch waiting on one, and a graded finding with no
+    evidence behind it are all the same thing: an assessment that went past something it
+    had not established.
+    """
+    out: list[str] = []
+    for q in report.open_questions:
+        if not (q.answer or "").strip():
+            out.append(f"{q.id} is not answered: {q.question}")
+    for p in report.paused:
+        out.append(f"{p.id} waits on {', '.join(p.waiting_on)}")
+    for i, f in enumerate(report.findings):
+        if not f.evidence:
+            out.append(f"findings[{i}] ({f.id}) is graded with no evidence entry behind it")
+    return out
+
+
+def catalog_mismatches(report: Report) -> list[str]:
+    """Advice: a finding whose harm or source is outside its catalog threat's values.
+
+    Sometimes right (the catalog can be wrong, and that is how the library learns it is),
+    so it never blocks. But it is said out loud, because a different harm usually means a
+    different threat, and an override nobody noticed is how a misfiled finding gets in.
+    """
+    from keel.store import get_store
+
+    store = get_store()
+    out: list[str] = []
+    for i, f in enumerate(report.findings):
+        t = store.threats.get(f.id) if f.from_catalog else None
+        if not t:
+            continue
+        if t.get("harm") and f.harm != t["harm"]:
+            out.append(
+                f"findings[{i}] ({f.id}): harm {f.harm!r}, the catalog threat says "
+                f"{t['harm']!r}. If the harm really differs, it may be a different threat"
+            )
+        sources = t.get("source") or []
+        if sources and f.source.who not in sources:
+            out.append(
+                f"findings[{i}] ({f.id}): source {f.source.who!r} is not among the catalog "
+                f"threat's sources ({', '.join(sources)})"
+            )
+    return out
+
+
+def fingerprint(system_id: str, finding_id: str, root_cause: str | None) -> str | None:
+    """The finding's identity across re-assessments and across systems that share it."""
+    return f"{system_id}/{finding_id}/{root_cause}" if root_cause else None
+
+
 def missing_prerequisites(report: Report) -> list[str]:
     """Advice, not an error: a requirement whose prerequisite the report does not ask for.
 
@@ -428,6 +555,15 @@ def save_report(system_id: str, date: str, data: dict[str, Any]) -> dict[str, An
             hint="for a control the library does not have, leave mitigation_id empty and "
                  "write the ask in description",
         )
+    struct_errors = structure_errors(report)
+    if struct_errors:
+        raise Invalid(
+            "parts of the assessment point at things that are not there",
+            details=[{"field": None, "message": m} for m in struct_errors],
+            hint="every evidence, question and threat id a report names must be in it; an "
+                 "evidence link must be https, on a host in evidence_hosts, pinned to the "
+                 "entry's commit and anchored at the lines",
+        )
 
     # Status is not the caller's to set here: it is a consequence of editing, and
     # finalising is a separate, deliberate act.
@@ -438,7 +574,9 @@ def save_report(system_id: str, date: str, data: dict[str, Any]) -> dict[str, An
         "success": True,
         "report": report.model_dump(),
         "reverted_to_draft": was_final,
-        "advice": missing_prerequisites(report),
+        # Not done while this is non-empty: the assessor does not leave these for later.
+        "open": open_items(report),
+        "advice": missing_prerequisites(report) + catalog_mismatches(report),
     }
 
 
@@ -448,6 +586,14 @@ def finalize_report(system_id: str, date: str) -> dict[str, Any]:
     report = _load_report_file(path)
     if report is None:
         raise Invalid(f"the report on disk for {system_id} / {date} does not parse")
+    blockers = open_items(report)
+    if report.status != "final" and blockers:
+        raise Invalid(
+            "the assessment still goes past things it has not established",
+            details=[{"field": None, "message": m} for m in blockers],
+            hint="answer the open questions, finish the paused branches, and back every "
+                 "graded finding with evidence, then finalize",
+        )
     if report.status != "final":
         report.status = "final"
         _write(path, report)

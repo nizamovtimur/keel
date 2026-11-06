@@ -64,6 +64,18 @@
         "The 98% figure is questioned as a vendor number on a different distribution",
         "The answer proposes an architectural control for production apply or deletion"
       ]
+    },
+    {
+      "id": 6,
+      "name": "subagent-open-question",
+      "prompt": "You are one of several subagents in a fleet assessment started by a coordinating session; the coordinator relays your questions to the security specialist and returns the answers to you. System to assess: hr-bot. Any employee can chat with it in Slack. It answers questions from an HR policy knowledge base (a Confluence space only HR staff can edit) and can call get_employee_record(employee_id) on the HR API through a service account that reads every employee's record, salary included. The Slack integration puts the asking employee's id into the system prompt, but the tool accepts any id. The service also exposes POST /admin/reindex with no authentication, which rebuilds the knowledge-base index from a URL given in the request body. It runs in the hr namespace of the company Kubernetes cluster; whether /admin/reindex is reachable from outside the cluster is set by the ingress configuration in the platform team's repository, which you cannot read. Assess the security of this system.",
+      "expected_output": "The record exposure is graded from the given facts; the reindex threat is paused, ungraded and not discarded, with a request for access to the ingress configuration handed back to the coordinator.",
+      "assertions": [
+        "The exposure of other employees' records through get_employee_record is carried through to a graded threat, since the given facts decide it",
+        "The threat through the unauthenticated /admin/reindex endpoint gets no severity or likelihood grade while its reachability is unknown, and is not discarded",
+        "The answer asks for access to the ingress configuration in the platform repository (or that document itself), rather than only asking someone to state whether the endpoint is exposed",
+        "The open question is handed back to the coordinating session and the assessment is not presented as complete"
+      ]
     }
   ]
 }

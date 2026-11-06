@@ -26,6 +26,97 @@ Likelihood = Literal["low", "medium", "high"]
 Severity = Literal["low", "medium", "high"]
 CoverageStatus = Literal["already_covered", "needs_implementation", "partial"]
 ReportStatus = Literal["draft", "final"]
+# Whether the feature the finding rests on runs today. Kept apart from likelihood so a
+# switched-off feature does not read as an unlikely attack: the grade describes the
+# design as it will run, and this says what is switched on now.
+Deployment = Literal["live", "pilot", "off", "not_deployed"]
+# How an evidence entry was obtained in this session.
+EvidenceKind = Literal["read", "command", "test"]
+# What an open question asks for. "access" is for when the assessor knows where the
+# fact lives and lacks the right or the document to read it: asking for that is a
+# narrower request than asking someone to recall the fact.
+AskKind = Literal["fact", "access"]
+
+
+class Evidence(BaseModel):
+    """One checked claim, kept out of the prose and referenced from it.
+
+    The text of a finding stays readable: a claim carries one marker, `[3]`, or an
+    embedded link to `#ev-3`, and the pointer itself lives here. A pointer is to the
+    exact place, pinned to a commit: a file or a branch moves, and evidence that moved
+    no longer proves anything. The quote is required so the entry still says something
+    to a reader who cannot open the source.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    id: int = Field(..., ge=1, description="Referenced from prose as [id] or #ev-id")
+    kind: EvidenceKind
+    quote: str = Field(
+        ..., min_length=1,
+        description="Verbatim: the lines read, or the output of the command or test",
+    )
+    commit: str | None = Field(
+        None, pattern=r"^[0-9a-f]{7,40}$", description="kind=read: the commit the lines are read at"
+    )
+    path: str | None = Field(None, description="kind=read: the file, relative to the repository root")
+    lines: str | None = Field(
+        None, pattern=r"^[1-9][0-9]*(-[1-9][0-9]*)?$", description="kind=read: '42' or '42-57'"
+    )
+    url: str | None = Field(
+        None,
+        description="Optional permalink to the same lines. Must be https, on a host in the "
+        "organisation's evidence_hosts, and contain the commit: anything else is refused on save",
+    )
+    command: str | None = Field(None, description="kind=command or test: exactly what was run")
+
+    @model_validator(mode="after")
+    def _validate(self) -> "Evidence":
+        if self.kind == "read":
+            missing = [k for k in ("commit", "path", "lines") if not getattr(self, k)]
+            if missing:
+                raise ValueError(
+                    f"evidence {self.id}: a read needs {', '.join(missing)} - point at the "
+                    "exact lines at a commit, not at a file or a branch"
+                )
+        elif not (self.command or "").strip():
+            raise ValueError(f"evidence {self.id}: a {self.kind} needs the command that was run")
+        return self
+
+
+class OpenQuestion(BaseModel):
+    """A fact the assessment cannot go past without.
+
+    Not a note for later. The branch that needs it stops here (see `Paused`) and the
+    report cannot be finalized while `answer` is empty. `looked_in` is what keeps the
+    question honest: a fact the assessor could have read in the code is not a question.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    id: str = Field(..., pattern=r"^Q[1-9][0-9]*$")
+    question: str = Field(..., min_length=1)
+    asks_for: AskKind = Field(
+        "fact", description="'access' when the place is known and the right or document is missing"
+    )
+    looked_in: str = Field(
+        ..., min_length=1, description="Where the assessor looked before asking, and why it did not settle it"
+    )
+    needed_for: str = Field(..., min_length=1, description="Which branch waits, and at which step")
+    answer: str | None = None
+
+
+class Paused(BaseModel):
+    """A threat candidate whose branch waits on an open question.
+
+    Neither a finding nor a discard: it carries no grade, no requirements and no reason
+    to drop it, because the fact that would decide those is not in yet. Once the answer
+    comes, it becomes one or the other.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    from_catalog: bool
+    waiting_on: list[str] = Field(..., min_length=1, description="Ids of open questions")
+    note: str = Field(..., min_length=1, description="What is established so far, and what the answer decides")
 
 
 class SourceInfo(BaseModel):
@@ -112,11 +203,17 @@ class Discarded(BaseModel):
     """A threat candidate ruled out during analysis.
 
     Deliberately NOT the full `Finding` chain — a discard is an id and why, nothing more.
+    The why is the threat's `reachability` condition holding in this system, established
+    from facts. A small consequence is not a discard: that threat is live and graded low.
+    A branch still waiting on a fact is not a discard either: it is `Paused`.
     """
 
     model_config = ConfigDict(extra="forbid")
     id: str
-    reason: str
+    reason: str = Field(
+        ..., description="How the threat's reachability condition holds here, with the fact that shows it"
+    )
+    evidence: list[int] = Field(default_factory=list, description="Ids of the evidence entries the reason rests on")
 
 
 class DialogueEntry(BaseModel):
@@ -173,12 +270,26 @@ class Finding(BaseModel):
     scenario: str
     source: SourceInfo
     asset: str
-    attack_surface: Surface
+    attack_surface: Surface | None = Field(
+        None, description="The channel the path crosses. Empty only when the weakness has none, "
+        "e.g. a standing credential reachable without anything crossing a boundary",
+    )
     vulnerability: str
     exploitation_complexity: ExploitationComplexity
     harm: Harm
     risk: RiskInfo
     delta: str
+    deployment: Deployment | None = Field(
+        None, description="What is switched on today. The grade describes the design as it will run"
+    )
+    root_cause: str | None = Field(
+        None, pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$",
+        description="Short stable slug of the defect, the same across re-assessments and across "
+        "systems that share it. With system_id and id it forms the finding's fingerprint",
+    )
+    evidence: list[int] = Field(
+        default_factory=list, description="Ids of the evidence entries this finding's claims rest on"
+    )
     requirements: list[Requirement] = Field(default_factory=list)
     ignored_mitigations: list[IgnoredMitigation] = Field(default_factory=list)
 
@@ -200,7 +311,16 @@ class Report(BaseModel):
     )
     delta_summary: str | None = Field(None, description="Re-assessments only: what changed and why")
     findings: list[Finding] = Field(default_factory=list)
+    paused: list[Paused] = Field(
+        default_factory=list, description="Branches waiting on an open question: no grade, no discard"
+    )
     discarded: list[Discarded] = Field(default_factory=list)
+    open_questions: list[OpenQuestion] = Field(
+        default_factory=list, description="Facts the assessment needs; finalizing waits for every answer"
+    )
+    evidence: list[Evidence] = Field(
+        default_factory=list, description="The addendum: every checked claim, referenced from the prose"
+    )
     # Named `meta`, not `_meta`: pydantic treats a leading underscore as a private
     # attribute and would not accept it as a field.
     meta: RunMeta = Field(

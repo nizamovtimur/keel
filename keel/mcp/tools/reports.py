@@ -86,12 +86,23 @@ async def save_report(system_id: str, date: str, report: dict[str, Any]) -> dict
     A requirement may ask for something the catalog does not have — that is how an
     assessment tells the library what it is missing. Record it with mitigation_id left
     empty and the ask written in description. Never invent a plausible-looking id: it
-    reads as a cataloged control, resolves to nothing, and the save is refused."""
+    reads as a cataloged control, resolves to nothing, and the save is refused.
+
+    Every evidence, question and threat id the report names must be in it, and an
+    evidence link must be https, on a host in evidence_hosts, pinned to its commit and
+    anchored at the lines; otherwise the save is refused.
+
+    `open` lists what the assessment has not established yet: unanswered questions,
+    branches waiting on them, graded findings with no evidence. While it is non-empty
+    the assessment is not done: get the answers (from whoever started you, if you run
+    as a subagent) and continue; do not hand back a link as if it were finished."""
     result = report_service.save_report(system_id, date, report)
     if not result["success"]:
         return {"success": False, "error": result["error"],
                 **({"errors": result["errors"]} if "errors" in result else {})}
     out = {"success": True, "system_id": system_id, "date": date,
            "reverted_to_draft": result["reverted_to_draft"]}
-    # Advice, never a block: a requirement whose prerequisite is not also being asked for.
+    if result["open"]:
+        out["open"] = result["open"]
+    # Advice, never a block: a missing prerequisite, a harm or source outside the threat.
     return {**out, "advice": result["advice"]} if result["advice"] else out
