@@ -67,7 +67,7 @@ function Framework({ fw, threats, sid, date }: { fw: ComplianceFramework; threat
   return (
     <section id={fw.source.id}>
       <h2>{fw.source.title} <span className="tag" style={{ marginLeft: 6 }}>{KIND[fw.source.kind]?.one}</span></h2>
-      <p className="sub">{total(c)} entries: <b style={{ color: c.not_met ? "var(--hi)" : "var(--ink)" }}>{c.not_met || 0} not met</b>{c.met ? `, ${c.met} met` : ""}{c.does_not_apply ? `, ${c.does_not_apply} do not apply` : ""}{c.waiting ? `, ${c.waiting} waiting on an answer` : ""}{c.not_assessed ? `, ${c.not_assessed} not assessed` : ""}{(c.out_of_scope || 0) + (c.library_gap || 0) ? `, ${(c.out_of_scope || 0) + (c.library_gap || 0)} beyond what the library covers` : ""}. <span className="t3">Version {fw.source.version}.</span></p>
+      <p className="sub">{(fw.source.entry_count || 0) > total(c) ? <><b>Partly mapped: {total(c)} of {fw.source.entry_count} entries.</b> Of those: </> : `${total(c)} entries: `}<b style={{ color: c.not_met ? "var(--hi)" : "var(--ink)" }}>{c.not_met || 0} not met</b>{c.met ? `, ${c.met} met` : ""}{c.does_not_apply ? `, ${c.does_not_apply} do not apply` : ""}{c.waiting ? `, ${c.waiting} waiting on an answer` : ""}{c.not_assessed ? `, ${c.not_assessed} not assessed` : ""}{(c.out_of_scope || 0) + (c.library_gap || 0) ? `, ${(c.out_of_scope || 0) + (c.library_gap || 0)} beyond what the library covers` : ""}. <span className="t3">Version {fw.source.version}.</span></p>
       <Stack big parts={parts(c)} total={total(c)} label={`${c.not_met || 0} not met`} />
       <LegendAll c={c} />
       <Toggle label="Order" value={order} onChange={setOrder} options={[["problems", "Not met first"], ["list", "In framework order"]]} />

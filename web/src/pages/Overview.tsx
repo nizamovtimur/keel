@@ -107,8 +107,8 @@ export function CoveragePage() {
     <b>{x.source.title}</b><span>{x.counts.covered} covered · {plural(x.counts.gap, "gap")}</span><Stack parts={p(x.counts)} total={x.entries.length} label={`${x.counts.covered} covered, ${x.counts.gap} gaps`} /></Link>)}</div>; })}</>;
   return (
     <Shell title={`${cs.source.title} coverage`} rail={rail}>
-      <Head title={cs.source.title} meta={[KIND[cs.source.kind]?.one, cs.source.version, <span className="num">checked {cs.source.checked}</span>, cs.source.url ? <a href={cs.source.url} target="_blank" rel="noopener noreferrer">the framework</a> : null]}
-        lede={<><p className="lede"><b>The library covers {c.covered} of {n} entries.</b> {c.out_of_scope} are out of scope for a deployed system, {plural(c.gap, "gap")}.</p>
+      <Head title={cs.source.title} meta={[KIND[cs.source.kind]?.one, cs.source.version, <span className="num">checked {cs.source.checked}</span>, cs.source.url ? <a href={cs.source.url} target="_blank" rel="noopener noreferrer">{cs.source.kind === "best_practice" ? "the framework" : "the text"}</a> : null]}
+        lede={<><p className="lede"><b>The library covers {c.covered} of {n} entries.</b> {c.out_of_scope} are out of scope for a deployed system, {plural(c.gap, "gap")}.{(cs.source.entry_count || 0) > n && <> <span className="t2">Mapped so far: {n} of the {cs.source.entry_count} in this release; the rest are not yet read against the library.</span></>}</p>
           <Stack big parts={p(c)} total={n} label={`${c.covered} covered, ${c.out_of_scope} out of scope, ${c.gap} gaps`} />
           <Legend items={[["covered", "Covered", c.covered], ["out_of_scope", "Out of scope", c.out_of_scope], ["gap", "Gap", c.gap]]} />
           <p className="t2 small" style={{ maxWidth: "72ch" }}>This page measures the library: what Keel can assess against this {cs.source.kind === "best_practice" ? "framework" : KIND[cs.source.kind]?.one.toLowerCase()}. How each assessed system stands against it is on <Link to="/compliance">Compliance</Link>.</p></>} />
