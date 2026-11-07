@@ -3641,10 +3641,22 @@ function reportFindingHtml(f, fi) {
       : `<input type="checkbox" ${r.included ? "checked" : ""} disabled>`;
     return `<div class="req-row"><label>${box}<span>${esc(label)} ${statusBadge}</span></label></div>`
       + ((idLink || owner) ? `<div class="req-meta" style="margin-left:24px">${idLink}${owner}</div>` : "")
-      + (r.coverage_note ? `<div class="req-note">${esc(r.coverage_note)}</div>` : "");
+      + (r.coverage_note ? `<div class="req-note">${esc(r.coverage_note)}</div>` : "")
+      + reqBuildHtml(r, `findings.${fi}.requirements.${ri}`);
   }).join("");
   const ignored = (f.ignored_mitigations || []).map(im =>
     `<div class="req-ignored">Not applied: <button type="button" class="reflink" data-jump-mit="${esc(im.mitigation_id)}">${esc(im.mitigation_id)}</button> — ${esc(im.reason)}</div>`).join("");
+  const rep0 = state.currentReport || {};
+  const sameCause = f.root_cause
+    ? (rep0.findings || []).filter(o => o !== f && o.root_cause === f.root_cause).map(o => o.id) : [];
+  const reproduced = (f.evidence || []).some(id =>
+    ((rep0.evidence || []).find(e => e.id === id) || {}).kind === "test");
+  // A high rests on someone who did not raise it trying to break it.
+  const review = f.review
+    ? `<div class="fwhy"><span class="k">Refutation tried</span>${esc(f.review.by)}: ${esc(f.review.verdict)}. ${esc(f.review.note)}</div>`
+    : (f.risk.severity === "high"
+      ? '<div class="fwhy"><span class="k">Refutation tried</span><span class="rep-empty">not yet: a high needs someone who did not raise it to try to break it</span></div>'
+      : "");
   // Severity and likelihood are grades, so they carry the weight ramp. Harm, surface and
   // exploitation cost are facts ABOUT the finding, not grades of it — neutral badges, so
   // nothing on the card competes with the ranking. They also read without being named,
@@ -3661,7 +3673,12 @@ function reportFindingHtml(f, fi) {
     + `<span class="badge type">exploitation ${rSelect(`findings.${fi}.exploitation_complexity`,
         f.exploitation_complexity, REPORT_LEVELS, "ie")}</span>`
     // What is switched on today, apart from the grade: the grade is the design as it runs.
-    + (f.deployment ? `<span class="badge soft">deployment: ${esc(f.deployment.replace("_", " "))}</span>` : "");
+    + (f.deployment ? `<span class="badge soft">deployment: ${esc(f.deployment.replace("_", " "))}</span>` : "")
+    // One cause, one fix: the cause is shown, and so are the other findings it closes.
+    + (f.root_cause ? `<span class="badge type" title="root cause">cause: ${esc(f.root_cause)}</span>` : "")
+    + (sameCause.length ? `<span class="badge soft">same cause as ${esc(sameCause.join(", "))}</span>` : "")
+    // A finding whose path was run, not only read, says so.
+    + (reproduced ? `<span class="badge soft">reproduced</span>` : "");
   // The proof is in the addendum; the card carries one marker per entry, pointing there.
   const evChips = (f.evidence || []).map(id => evidenceChip(id)).join("");
   const grade = (kind, path, level, quiet) => {
@@ -3695,6 +3712,7 @@ function reportFindingHtml(f, fi) {
       <span class="grades">
         ${grade("severity", `findings.${fi}.risk.severity`, f.risk.severity)}
         ${grade("likelihood", `findings.${fi}.risk.likelihood`, f.risk.likelihood, true)}
+        ${f.risk_today ? `<span class="sev quiet sev-${esc(f.risk_today.severity)}" title="${esc(f.risk_today.reasoning)}"><span class="p">today</span>${esc(f.risk_today.severity)} × ${esc(f.risk_today.likelihood)}</span>` : ""}
         ${reportEditable() ? `<button type="button" class="fdrop" data-drop-finding="${fi}" title="Remove this finding">&times;</button>` : ""}
       </span>
     </div>
@@ -3702,10 +3720,45 @@ function reportFindingHtml(f, fi) {
     <div class="fwhy"><span class="k">Why these grades</span>${rProse(`findings.${fi}.risk.reasoning`,
       f.risk.reasoning, "", "A full sentence — this label is not carried into the hand-off")}</div>
     ${chain ? `<dl class="fchain">${chain}</dl>` : ""}
+    ${review}
     <div class="badges">${facts}</div>
     <div class="fev"><span class="k">Evidence</span>${evChips || '<span class="rep-empty">none: this grade rests on nothing checked</span>'}</div>
     ${(reqs || ignored) ? `<div class="freqs"><span class="freqs-k">Requirements</span>${reqs}${ignored}</div>` : ""}
   </div>`;
+}
+
+// What a shipped requirement must say so a team can build and accept it. Shown when
+// recorded, and as empty slots while the report is editable.
+function reqBuildHtml(r, path) {
+  const rows = [["Must hold", "invariant"], ["Enforced at", "enforce_at"], ["Done when", "done_check"]]
+    .filter(([, k]) => reportEditable() || (r[k] || "").trim())
+    .map(([label, k]) => `<dt>${label}</dt><dd>${rProse(`${path}.${k}`, r[k], "")}</dd>`).join("");
+  return rows ? `<dl class="fchain" style="margin-left:24px">${rows}</dl>` : "";
+}
+
+// The ledger: every place something reaches the system, and what became of it. A row
+// with no outcome and no note is a surface nobody walked.
+function ledgerHtml(rep) {
+  const rows = rep.surfaces || [];
+  if (!rows.length) return '<p class="placeholder">No surface ledger. The report cannot be finalized until every entry point, tool and data path is listed.</p>';
+  return rows.map(s => {
+    const walked = (s.outcome || []).length || (s.note || "").trim();
+    const out = (s.outcome || []).map(id => `<button type="button" class="reflink" data-jump-threat="${esc(id)}">${esc(id)}</button>`).join(" ");
+    return `<div class="req-ignored"><span class="meta oq-id">${esc(s.id)}</span>
+      <span class="badge soft">${esc(s.kind)}</span> ${esc(s.name)} <code>${esc(s.where)}</code>
+      ${s.found_by === "review" ? '<span class="badge soft">found in review</span>' : ""}
+      ${(s.evidence || []).map(id => evidenceChip(id)).join(" ")}
+      <div class="req-note">${out ? out : ""}${(s.note || "").trim() ? ` ${esc(s.note)}` : ""}${walked ? "" : '<span class="oq-none">not walked</span>'}</div></div>`;
+  }).join("");
+}
+
+function refutedHtml(rep) {
+  const rows = rep.refuted || [];
+  if (!rows.length) return '<p class="placeholder">Nothing refuted.</p>';
+  return rows.map(r => `<div class="req-ignored">
+      <button type="button" class="reflink" data-jump-threat="${esc(r.id)}">${esc(r.id)}</button>
+      ${r.root_cause ? `<span class="badge type">cause: ${esc(r.root_cause)}</span>` : ""} — ${esc(r.reason)}
+      ${(r.evidence || []).map(id => evidenceChip(id)).join(" ")}</div>`).join("");
 }
 
 // One marker per evidence entry, pointing at the addendum below the findings. The
@@ -3752,6 +3805,7 @@ function openHtml(rep) {
         ${q.asks_for === "access" ? '<span class="badge soft">needs access</span>' : ""}</div>
       <div class="oq-row"><span class="k">Looked in</span>${esc(q.looked_in)}</div>
       <div class="oq-row"><span class="k">Waiting</span>${esc(q.needed_for)}</div>
+      ${(q.how_to_check || "").trim() ? `<div class="oq-row"><span class="k">How to check</span>${esc(q.how_to_check)}</div>` : ""}
       <div class="oq-row"><span class="k">Answer</span>${(q.answer || "").trim() ? esc(q.answer) : '<span class="oq-none">not answered</span>'}</div>
     </div>`).join("");
   const pHtml = paused.map(p => `<div class="req-ignored">
@@ -3829,6 +3883,7 @@ function reportDetailHtml(rep) {
       <div class="fold-body">${body}</div>
     </details></section>`;
 
+  const unwalked = (rep.surfaces || []).filter(s => !(s.outcome || []).length && !(s.note || "").trim()).length;
   const draft = rep.status === "draft";
   // One verb. There used to be three — save, correct, reopen — and between them they
   // asked the reader to classify their own edit before making it, which nobody wants to
@@ -3872,7 +3927,9 @@ function reportDetailHtml(rep) {
       `— ${findings.length}, worst first`)}
     ${readsec("Evidence", evidenceHtml(rep), `— ${(rep.evidence || []).length}, what the findings rest on`)}
     <div class="rep-aside">
+      ${fold("surfaces", "Surfaces walked", `${(rep.surfaces || []).length}${unwalked ? `, ${unwalked} not walked` : ""}`, ledgerHtml(rep))}
       ${fold("discarded", "Ruled out", (rep.discarded || []).length, discarded)}
+      ${fold("refuted", "Refuted", (rep.refuted || []).length, refutedHtml(rep))}
       ${fold("meta", "How this assessment ran", metaCount, runMeta)}
     </div>`}
   </div>`;
@@ -3967,7 +4024,10 @@ function buildReportMarkdown(rep, mitInfo, s) {
     const label = info ? info.name : (r.description || r.mitigation_id);
     const owner = s.owner && info && info.owner ? ` (owner: ${info.owner})` : "";
     const note = r.coverage_status === "already_covered" ? " — already in place in this system" : "";
-    return `- ${label}${owner}${note}`;
+    const build = [["Must hold", r.invariant], ["Enforced at", r.enforce_at], ["Done when", r.done_check]]
+      .filter(([, v]) => (v || "").trim()).map(([k, v]) => `
+  - ${k}: ${v}`).join("");
+    return `- ${label}${owner}${note}${build}`;
   };
 
   let any = false;

@@ -414,8 +414,42 @@ def structure_errors(report: Report) -> list[str]:
 
     for i, f in enumerate(report.findings):
         check_refs(f.evidence, f"findings[{i}]")
+        if f.risk_today is not None and f.deployment in (None, "live"):
+            errors.append(
+                f"findings[{i}] ({f.id}): risk_today is for a feature that is not live yet; "
+                "a live one has a single grade"
+            )
     for i, d in enumerate(report.discarded):
         check_refs(d.evidence, f"discarded[{i}]")
+    for i, r in enumerate(report.refuted):
+        check_refs(r.evidence, f"refuted[{i}]")
+
+    # One fingerprint, one finding: two cards for the same defect of the same threat in
+    # one report are a duplicate, whatever their wording.
+    prints = [fingerprint(report.system_id, f.id, f.root_cause) for f in report.findings]
+    for dup in sorted({p for p in prints if p and prints.count(p) > 1}):
+        errors.append(f"findings: {dup} appears more than once; one defect is one finding")
+
+    finding_ids = {f.id for f in report.findings}
+    for i, r in enumerate(report.refuted):
+        if r.id in finding_ids and fingerprint(report.system_id, r.id, r.root_cause) in prints:
+            errors.append(f"refuted[{i}]: {r.id} is also a finding; a refuted finding is not graded")
+
+    s_ids = [s.id for s in report.surfaces]
+    for dup in sorted({i for i in s_ids if s_ids.count(i) > 1}):
+        errors.append(f"surfaces: id {dup} is used more than once")
+    branch_ids = (
+        finding_ids | {d.id for d in report.discarded} | {r.id for r in report.refuted}
+        | {p.id for p in report.paused}
+    )
+    for i, s in enumerate(report.surfaces):
+        check_refs(s.evidence, f"surfaces[{i}]")
+        for oid in s.outcome:
+            if oid not in branch_ids:
+                errors.append(
+                    f"surfaces[{i}] ({s.id}): outcome {oid} is not a finding, discard, "
+                    "refutation or paused branch of this report"
+                )
 
     decided = {f.id for f in report.findings} | {d.id for d in report.discarded}
     for i, p in enumerate(report.paused):
@@ -449,6 +483,52 @@ def open_items(report: Report) -> list[str]:
     for i, f in enumerate(report.findings):
         if not f.evidence:
             out.append(f"findings[{i}] ({f.id}) is graded with no evidence entry behind it")
+        if f.risk.severity == "high" and f.review is None:
+            out.append(
+                f"findings[{i}] ({f.id}) is graded high and nobody who did not raise it has "
+                "tried to refute it"
+            )
+        for ri, r in enumerate(f.requirements):
+            if not r.included or r.coverage_status == "already_covered":
+                continue
+            missing = [k for k in ("invariant", "enforce_at", "done_check") if not (getattr(r, k) or "").strip()]
+            if missing:
+                out.append(
+                    f"findings[{i}] ({f.id}) requirement {ri + 1} ships without "
+                    f"{', '.join(missing)}: nobody can build or accept it as written"
+                )
+    if not report.surfaces:
+        out.append("no surface ledger: list every entry point, tool and data path the system has")
+    for s in report.surfaces:
+        if not s.outcome and not (s.note or "").strip():
+            out.append(f"surface {s.id} ({s.name}) was listed but not walked: no outcome and no note")
+    return out
+
+
+def refuted_before(report: Report) -> list[str]:
+    """Advice: a finding an earlier assessment of this system refuted, raised again.
+
+    Allowed, because a new fact can change it, but the new fact has to be named. Without
+    this, a refutation quietly expires the next time someone runs the assessment.
+    """
+    earlier = [
+        r for r in _load_system_reports(_reports_dir() / report.system_id)
+        if r.date < report.date
+    ]
+    seen: dict[str, tuple[str, str]] = {}
+    for r in sorted(earlier, key=lambda r: r.date):
+        for x in r.refuted:
+            fp = fingerprint(r.system_id, x.id, x.root_cause)
+            if fp:
+                seen[fp] = (r.date, x.reason)
+    out: list[str] = []
+    for i, f in enumerate(report.findings):
+        hit = seen.get(fingerprint(report.system_id, f.id, f.root_cause) or "")
+        if hit:
+            out.append(
+                f"findings[{i}] ({f.id}) was refuted on {hit[0]}: {hit[1]} Say in delta "
+                "which new fact brings it back"
+            )
     return out
 
 
@@ -576,7 +656,7 @@ def save_report(system_id: str, date: str, data: dict[str, Any]) -> dict[str, An
         "reverted_to_draft": was_final,
         # Not done while this is non-empty: the assessor does not leave these for later.
         "open": open_items(report),
-        "advice": missing_prerequisites(report) + catalog_mismatches(report),
+        "advice": missing_prerequisites(report) + catalog_mismatches(report) + refuted_before(report),
     }
 
 
