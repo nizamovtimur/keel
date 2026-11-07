@@ -1,0 +1,45 @@
+# Check catalog merge requests and publish Keel's read-only site to GitLab Pages.
+#
+# 1. Copy this file to .gitlab-ci.yml at the root of your copy of Keel.
+# 2. Turn on Pages access control before the first run: Settings > General > Visibility,
+#    project features, permissions > Pages: "Only project members". If you do not see the
+#    option, your GitLab administrator has to enable Pages access control on the instance.
+#    See docs/adopt.md.
+# 3. If your runners cannot reach PyPI, point pip and uv at your internal mirror
+#    (PIP_INDEX_URL and UV_INDEX_URL).
+
+stages:
+  - test
+  - deploy
+
+default:
+  image: python:3.12-slim
+  before_script:
+    - pip install uv
+
+# Runs on every merge request: the same checks the upstream project runs.
+keel-check:
+  stage: test
+  script:
+    - uv sync --frozen --extra dev
+    - uv run ruff check .
+    - uv run keel schema --check
+    - uv run keel validate
+    - uv run pytest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Runs on the default branch: builds the site into public/, which GitLab publishes.
+pages:
+  stage: deploy
+  script:
+    - uv sync --frozen --no-dev
+    - uv run keel validate
+    # Catalog only. To publish final reports as well, add: --reports reports
+    # (only with Pages access control on; see step 2 above).
+    - uv run keel site --out public --title "Keel threat model"
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

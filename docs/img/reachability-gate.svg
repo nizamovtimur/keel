@@ -48,5 +48,5 @@
   <text x="245" y="467" text-anchor="middle" fill="#5b6675" font-size="13">Recorded as discarded, with the reason. No controls pulled.</text>
 
   <rect x="490" y="436" width="450" height="50" rx="10" fill="#e7f4ec" stroke="#b3dcc4"/>
-  <text x="715" y="467" text-anchor="middle" fill="#186c40" font-size="13">Pulls its 7 gating and 12 soft controls, each asked: in place here?</text>
+  <text x="715" y="467" text-anchor="middle" fill="#186c40" font-size="13">Pulls its 7 gating and 16 soft controls, each asked: in place here?</text>
 </svg>

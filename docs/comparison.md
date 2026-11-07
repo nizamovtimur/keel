@@ -2,7 +2,7 @@
 
 Keel builds on all three and reuses their framing. The coverage table below is how it says so.
 
-They give you a shared language and stop there, which leaves both of the problems in the [README](../README.md) standing.
+They give you a shared language and stop there, which leaves both of the problems in [Why Keel is built this way](why-keel.md#two-problems) standing.
 
 | | Against the first problem: is it reachable here? | Against the second: can I make it mine? |
 | --- | --- | --- |
@@ -18,15 +18,18 @@ It also separates what OWASP conflates: a mechanism becomes a finding only once 
 
 ## Coverage
 
+Counts as of 7 November 2026. The site's coverage page and `get_coverage` give the live rows.
+
+
 Every entry of a pinned release gets a row whether or not Keel answers it. A matrix built outwards from Keel's own content could only ever show what Keel already has, never what is missing.
 
 | Source | Rows | Covered | Out of scope, with reasoning | Gap |
 | --- | ---: | ---: | ---: | ---: |
 | OWASP Top 10 for LLM Applications 2025 | 10 | 10 | 0 | 0 |
 | OWASP Top 10 for Agentic Applications 2026 | 10 | 10 | 0 | 0 |
-| MITRE ATLAS 5.6.0 | 101 | 68 | 22 | 11 |
+| MITRE ATLAS 5.6.0 | 101 | 69 | 22 | 10 |
 | Google SAIF risk map | 15 | 9 | 4 | 2 |
-| **Total** | **136** | **97** | **26** | **13** |
+| **Total** | **136** | **98** | **26** | **12** |
 
 A row is one of three things, and the second is not a polite way of saying the third. `covered` names the records that answer it, sometimes in a shape of its own, which the note explains. `out_of_scope` carries the reasoning for why Keel deliberately does not answer it. `gap` is an admission.
 

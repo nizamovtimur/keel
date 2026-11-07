@@ -1,183 +1,126 @@
 # Keel
 
-**A threat model you run against your system and edit to fit it, without it turning into a dump.**
+**A GenAI threat catalog your security team keeps in its own Git, and an agent workflow that assesses one of your AI systems against it and hands back a report.**
 
 [![CI](https://github.com/roselis-lab/keel/actions/workflows/ci.yml/badge.svg)](https://github.com/roselis-lab/keel/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A keel is the one load-bearing member that keeps a hull upright with the least material. Same idea here: the smallest structure that holds a GenAI threat model together and keeps an assessment on course.
+Keel runs inside the coding agent your engineers already use: Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, Kilo Code or Gemini CLI. You describe an AI system. The agent checks it against the catalog, asks you when a fact is missing, rules out what cannot happen in that system with the reason written down, and saves a report your team reviews, signs off and publishes.
 
-## Two problems
+## What your team gets
 
-**A threat model is an encyclopedia, not an engine.** It is read, not run. Nothing in it answers the only question that matters in front of a real system: is this reachable *here* at all?
+- **A threat catalog you own.** GenAI threats and the controls against them, as YAML files in your repository. A change to the catalog is a pull request: reviewed like code, checked by CI.
+- **Assessments that show their reasoning.** A report lists the threats that apply to the system with severity and likelihood, the threats ruled out and why, and the controls still to build.
+- **A history per system.** One report per system per date. A re-assessment starts from the last report and states what changed.
+- **A read-only site for everyone else.** `keel site` turns the catalog and the signed-off reports into plain HTML pages. GitHub Pages or GitLab Pages publishes them, behind the access control your Git host already has.
+- **A map to the lists auditors ask about.** Every entry of the OWASP Top 10 for LLM Applications 2025, the OWASP Top 10 for Agentic Applications 2026, MITRE ATLAS 5.6.0 and the Google SAIF risk map has a row: covered, out of scope with the reason, or an open gap.
 
-**And it is someone else's encyclopedia.** OWASP did not write about your architecture. Taking it as it stands does not fit; editing it to fit turns it into your own encyclopedia within a quarter - just as dead, and now wrong as well.
+## A first assessment, end to end
 
-The second problem is what makes the first hard. An engine over somebody's list is easy. What is hard is a list you can rewrite for yourself that does not rot while you do it.
+Take the demo system in [`docs/demo/system-under-assessment.md`](docs/demo/system-under-assessment.md). It is made up: "Halo", a support assistant inside a web app. It can look up orders, issue refunds up to $500, change shipping addresses and escalate to a person. It searches the help centre, customers' past tickets and internal runbooks, and keeps a short note about each customer.
 
-Everything in Keel serves one of those two, and everything below is one of the two answers.
+You open your copy of Keel in your agent, paste that description and ask: *"Assess the GenAI security of this system."* The agent then:
 
-## The model
+1. checks whether this system has been assessed before, and if so, works from the last report;
+2. picks the catalog threats that could fit, and tests each one's "does not apply when" condition against Halo. One that stays live: the chat panel renders the model's markdown, images included, so a model-supplied image URL is a request the user's browser makes;
+3. stops and asks whenever it needs a fact the description does not give, instead of guessing either way;
+4. saves a draft report to `reports/<system-id>/<date>.yaml` and gives you a link to it.
 
-Four entities, and the chain runs one way.
+You open the draft in the local UI (`uv run keel up`), correct grades and wording, and mark it final.
 
-```mermaid
-flowchart LR
-  S["source<br/>who or what drives it"] --> W["weakness<br/>on a component,<br/>reached over a surface"]
-  W --> T["threat<br/>one record, one harm"]
-  T --> H["harm<br/>what breaks"]
-  T --> R{"reachability<br/>a live path here?"}
-  R -->|no| D["discarded,<br/>with the reason"]
-  R -->|yes| M["mitigations<br/>gating or soft"]
-  M --> I["implementations<br/>in place here?"]
-```
+**Who you need.** Someone who knows the system's architecture, to answer the agent's questions, and the security person accountable for the grades. Their git identity goes into the report as the assessor. Often this is one person.
 
-A **weakness** is an architectural condition on a **component** you own, reached over a **surface**, which is the channel that component treats as trustworthy. A **threat** rests on one or more weaknesses, is driven by a **source**, and lands as exactly one **harm**. **Mitigations** hang off the threat, each graded `gating` (blocks it) or `soft` (only lowers the odds, and the link says so in writing).
+**How long it takes.** Each report records when the run started and finished, and its page shows the duration, so after the first assessment you have your own number. What makes a run longer is missing facts: each one is a question back to you. Write down before you start what the system is made of, who can put text into it, what is worth protecting and what controls already exist. The demo description is a template for that.
 
-One threat is one harm, and the weaknesses are the paths to it. Two records exist only where ruling one out does not rule the other out. Several paths to the same harm, closed by several different controls, are still one threat.
+[Getting started](docs/getting-started.md) walks this path step by step.
 
-A technique such as prompt injection is a mechanism rather than a threat. It is a weakness's `surface` and a threat's `source`, and it turns up across many records instead of becoming one.
+## What comes out
 
-[Every field and the frozen vocabularies](docs/model.md).
+A report is one YAML file per system per date, and a page in the UI and on the published site. Different people read different parts of it:
 
-Which leaves the field that does the work, and it gets a section of its own.
+| Reader | What they look at |
+| --- | --- |
+| Risk owner | The findings table: each threat in one paragraph, with severity and likelihood on a three-level scale |
+| Product team | The requirements marked for hand-off: what to build, and what is already in place |
+| Security lead, next assessor | Everything, including the threats ruled out with the reason and what changed since the last assessment |
 
-## The first answer: every threat says when it does not apply
+[Reading a report](docs/reading-a-report.md) explains each part with an example.
 
-Here is one record from the catalog, put in front of two systems.
+## Run it in your own Git
 
-<p align="center"><img src="docs/img/reachability-gate.svg" alt="T-TOOL-ABUSE judged against two architectures: its reachability condition rules it out for a support assistant that only drafts replies, and leaves it live for a release agent that runs migrations" width="900"></p>
-
-`T-TOOL-ABUSE` is *a tool the agent legitimately holds changes or destroys state on the model's say-so*. Its `reachability` says when that is not a live path:
-
-> The reachable tools have no operations with real consequences - reads, or writes to state the session discards - or the model influences neither the choice of tool nor its arguments, as in a rigidly predefined pipeline.
-
-For the support assistant, both halves hold. Its tools read; the only thing it writes is a draft that a person then sends. The threat is discarded, and the assessment records why, so the next reviewer does not re-derive it.
-
-For the release agent, neither half holds. It can run a migration and drop a namespace, the model chooses both the tool and the arguments, and the effects outlive the session. The threat stays live and pulls its 7 gating and 12 soft controls, each of which is then asked a second question: is it in place *in this deployment*, or only in the catalog?
-
-Every threat in the catalog carries a sentence like that, written against the system with no controls on it. That sentence is the difference between reading a list and running it.
-
-## The second answer: it is your copy, and a change to it is a pull request
-
-The model is YAML in git. There is no database. Every write, from the UI or the MCP tools or your editor, lands in `catalog/*.yaml` as a readable diff.
-
-```bash
-git checkout -b add-scheduled-task-authority
-git add catalog/
-git commit -m "T-CRED-THEFT: weakness for a grant that outlives the grantor"
-gh pr create --fill
-```
-
-So a threat model gets reviewed the way code does: someone proposes a change, someone else reads the diff and argues with it, CI runs, it merges, and the next assessment in your organisation already uses it. That is the whole of what "the model is yours" means, and it is why the format is files rather than a product with an admin panel.
-
-The part of the model that makes this survive a fork is `implementations`, which is a layer of its own. The shared card defines a control and how to accept it; your implementation record says how you actually built it. The two move on different clocks, so taking an upstream change does not collide with your build, and a card with no implementation recorded is treated as a recommendation rather than as cover.
-
-## The loop
-
-An assessment is not the end of the work. A finding the catalog did not have is marked as such, and that mark is what the next authoring pass is for.
-
-```mermaid
-flowchart LR
-  A["Assess a system<br/>against the catalog"] --> B["A finding the catalog<br/>did not have"]
-  B --> C{"Already answered<br/>somewhere?"}
-  C -->|covered, or out of scope| D["Record the row.<br/>Nothing to author."]
-  C -->|gap| E["Research gate:<br/>a case, the defence that shipped,<br/>what the sources call it,<br/>what you could not find"]
-  E --> F["Write to the bar:<br/>a weakness on an existing threat,<br/>or a new record"]
-  F --> G["keel validate,<br/>check-style,<br/>pull request"]
-  D --> A
-  G --> A
-```
-
-Most of what arrives is already answered, so the loop starts by finding out. That step ends as a row in the coverage matrix, and a row is a real output: it is how the model says what it deliberately does not cover without that reading as an omission.
-
-When it is a genuine gap, the authoring skill will not let the writing start until the research is done. It has stopped the author mid-card more than once. [How the gate holds, with a worked example](docs/authoring.md).
-
-## Where the model stands
-
-The catalog is a floor, not a claim to enumerate GenAI threats. The parts that are not written yet are counted too.
-
-**13 threats, 71 mitigations, 92 threat-to-mitigation links, 51 references.**
-
-**136 rows** of coverage against four pinned releases - OWASP LLM Top 10 2025, OWASP Agentic Top 10 2026, MITRE ATLAS 5.6.0 and the Google SAIF risk map - of which **97 covered, 26 out of scope with the reasoning, 13 gaps**. Both OWASP lists are fully answered. Every entry of a release gets a row whether or not Keel answers it, because a matrix built outwards from Keel's own content could never show what is missing. [The full table](docs/comparison.md#coverage).
-
-What is not done, stated rather than hidden:
-
-- **280 mitigation card fields are unwritten** - `scope`, `out_of_scope`, `locus` and `failure_behavior` across 70 of the 71 cards.
-- **70 controls have no acceptance criteria.** A control nobody can check is a recommendation, and the warning says so in those words.
-- **11 weaknesses carry no reference**, because no public case exists for them. Mostly multi-agent paths and approval fatigue.
-- **3 controls are linked from no threat.**
-
-Saying it is the point. The loop above is what those counts are for.
-
-## Install
+Bring Keel into your internal Git host with upstream kept as a second remote, so you can take updates later:
 
 ```bash
 git clone https://github.com/roselis-lab/keel.git
 cd keel
-uv sync                # installs Keel; `pip install -e .` works too
-uv run keel validate   # confirm the catalog loads
+git remote rename origin upstream
+git remote add origin <your internal repository URL>
+git push -u origin main
+
+uv sync                 # Python 3.11 or newer; `pip install -e .` works too
+uv run keel validate    # warnings for unfinished catalog cards, then "Catalog is valid."
 ```
 
-### Run it against a system
+The repository already carries the MCP and skill configuration for each supported agent, so opening the folder in the agent is the whole setup. CI for GitHub is in `.github/workflows/ci.yml`; for GitLab, copy [`examples/pages/gitlab-ci.yml`](examples/pages/gitlab-ci.yml).
 
-Open the repo in your agent. Keel runs over stdio as `python -m keel.mcp.server`, so there is no server to start, and the repo already carries the config each agent reads:
+[Adopt Keel in your company](docs/adopt.md) covers the rest: who reviews catalog changes, where reports live, and publishing the site.
 
-| Agent | MCP server | Skills |
-| --- | --- | --- |
-| Claude Code | `.mcp.json` | `.claude/skills/` |
-| Codex | `.codex/config.toml` (trusted projects only) | `.agents/skills/` |
-| Cursor | `.cursor/mcp.json` | `.agents/skills/` |
-| GitHub Copilot / VS Code | `.mcp.json` | `.agents/skills/` |
-| OpenCode | `opencode.json` | `.agents/skills/` |
-| Kilo Code | `.kilo/kilo.jsonc` | `.agents/skills/` |
-| Gemini CLI | `.gemini/settings.json` | `.agents/skills/` |
+## Keep your changes and still take updates
 
-Any other agent: point it at the same command, run from the repo root, and at `.agents/skills/`, the shared location most agents read. `.claude/skills/` is the same set for Claude Code, which reads only its own folder; a test fails if the two drift, so edit one and copy it to the other. The `python` on the agent's path has to be the one Keel is installed into (activate the `uv sync` environment, or use `pip install -e .`).
+What you change in your copy:
 
-Then ask: *"Assess the GenAI security of \<describe your system\>."*
+- **`implementations`** on a control card: how your organisation actually built that control. Until one is recorded, the assessor treats the control as a recommendation, not as cover.
+- **New threats and controls** for your own stack.
+- **Reports**, if you keep them in the same repository.
 
-<p align="center"><img src="docs/img/assessment-flow.svg" alt="How an assessment runs: your system, candidate threats, the reachability filter, mitigations and whether they are in place here, risk, and the report" width="900"></p>
+To take upstream changes, merge `upstream/main` on a branch and open it as a pull request; CI runs `keel validate` over the result. Adding new files and implementation records merges cleanly; rewriting upstream text is what produces conflicts. [Taking upstream changes](docs/adopt.md#take-upstream-changes) has the commands.
 
-The `assess-genai-with-library` skill matches weaknesses against your architecture, applies each `reachability` condition to the un-mitigated system, and checks which linked controls have an implementation recorded. It writes a report to `reports/<system>/<date>.yaml` through the MCP tools, which check what a file write cannot: that grades are on the allowed scale, and that every catalog id the report names exists.
-
-The gate around all of this is symmetric. Missing a fact means ask. Dropping a threat because a fact was absent is the same mistake as confirming one on a guess.
-
-A second assessment of the same system is a delta against the first, not a re-derivation.
-
-### Browse and edit it
+## Share it with people who do not run Keel
 
 ```bash
-uv run keel up                   # UI and REST at http://127.0.0.1:8420/, in the background
-uv run keel down                 # stop it
-# or: docker compose up          # same UI at http://localhost:8000/; add --profile mcp for HTTP MCP on :8001
+uv run keel site --out public                      # the catalog only
+uv run keel site --out public --reports reports    # plus the signed-off reports
 ```
 
-`keel up` starts the server if it is not already running and says where it is, so it is safe to run at the start of every session. The UI and the MCP server are two processes over the same files, and each picks up what the other writes without a restart.
+The output is a folder of static pages with no scripts. Ready-made pipelines: [GitHub Pages](examples/pages/github-pages.yml) and [GitLab Pages](examples/pages/gitlab-ci.yml). A Pages site can be public on the internet depending on your plan, so check [who can see it](docs/adopt.md#who-can-see-the-site) before publishing reports.
 
-Keel listens on `127.0.0.1` and nowhere else. The API writes your catalog and has no login, so being local is its whole access control: it binds to loopback, answers only to `localhost` and `127.0.0.1`, sends no CORS headers, and refuses a write that comes from another site. The container publishes its ports on the host's loopback for the same reason. To serve Keel to other machines, put something that authenticates in front of it and add its name to `ALLOWED_HOSTS`.
+The local UI (`uv run keel up`, at `http://127.0.0.1:8420/`) is for the people who author: correcting reports and editing the catalog through forms. It listens on your own machine only and has no login, so it is not the thing to share.
 
-One static HTML file, no build step, six screens. The fastest way to author is to ask an LLM through the MCP tools; the UI is review-first and carries full create, read, update and delete as a fallback.
+## What is in the catalog
 
-### Grow it
+A snapshot, taken on 7 November 2026. `keel validate` and the site's overview page give the live numbers.
 
-Edit through the MCP write tools, the UI, or the YAML by hand. Add what your stack needs, record how your organisation realises a control in `implementations`, and prune what does not apply.
+- **13 threats, 76 controls**, 105 threat-to-control links, 65 references to incidents, papers and advisories.
+- **136 coverage rows** against the four tracked lists: 98 covered, 26 out of scope with the reasoning, 12 gaps. Both OWASP lists are fully answered. [The table](docs/comparison.md#coverage).
 
-CI runs `ruff`, `keel schema --check`, `keel validate` and `pytest` on every pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for what belongs in the shared catalog and what belongs in your fork.
+What is not done yet, stated rather than hidden:
+
+- 279 control card fields are unwritten (`scope`, `out_of_scope`, `locus` and `failure_behavior`), across 70 of the 76 cards.
+- 69 controls have no acceptance criteria. A control nobody can check is a recommendation, and `keel validate` says so in those words.
+- 1 control is linked from no threat.
 
 ## Documentation
 
-- [The model](docs/model.md) - the four entities, every field, and the frozen vocabularies.
-- [Authoring](docs/authoring.md) - the research gate, the three layers of checking, and what no rule can decide.
-- [Against OWASP, ATLAS and MAESTRO](docs/comparison.md) - what Keel takes from each, and the coverage table.
-- [Skills, UI and interfaces](docs/interfaces.md) - what ships in the box.
+**Start here**
+
+- [Getting started](docs/getting-started.md): from clone to your first report.
+- [Reading a report](docs/reading-a-report.md): what each part means and who it is for.
+- [Adopt Keel in your company](docs/adopt.md): internal Git, CI, catalog review, where reports live, publishing, upstream updates.
+
+**Reference**
+
+- [Commands, skills, UI and interfaces](docs/interfaces.md)
+- [The model](docs/model.md): threats, weaknesses, controls, every field and the fixed vocabularies.
+- [Authoring](docs/authoring.md): how new catalog content is researched, written and checked.
+- [Against OWASP, ATLAS and MAESTRO](docs/comparison.md): what Keel takes from each, and the coverage table.
+
+**Background**
+
+- [Why Keel is built this way](docs/why-keel.md)
 
 ## Development
 
-Two checks, for two different things.
-
-- **`uv run keel validate`** checks the catalog content: schema, frozen vocabularies, link integrity, id and filename agreement, coverage claims, plus the advisory tier.
-- **`uv run pytest`** is the code test suite, for anyone modifying Keel itself.
+Two checks, for two different things. `uv run keel validate` checks the catalog content: schema, fixed vocabularies, links, and coverage claims. `uv run pytest` tests Keel's own code.
 
 ```bash
 uv sync --extra dev
@@ -185,6 +128,8 @@ uv run ruff check .
 uv run keel validate
 uv run pytest
 ```
+
+CI runs these, plus `keel schema --check`, on every pull request. See [CONTRIBUTING.md](CONTRIBUTING.md) for what belongs in the shared catalog and what belongs in your copy.
 
 ## License
 
