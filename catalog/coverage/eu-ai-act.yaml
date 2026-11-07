@@ -1,0 +1,91 @@
+source:
+  id: eu-ai-act
+  title: EU Artificial Intelligence Act
+  kind: regulation
+  version: Regulation (EU) 2024/1689, consolidated 2026-07-27 (as amended by Regulation (EU) 2026/1744)
+  released: '2026-07-27'
+  url: https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02024R1689-20260727
+  checked: '2026-11-07'
+  entry_count: 119
+  note: >-
+    A regulation, not a threat list: a system that falls short here is in breach, not
+    merely behind best practice. Rows are whole articles. Only the articles that bind
+    the security of a deployed system are mapped so far, Article 15 first; the rest of
+    the 119 are not yet read against the library, so the import counts as unfinished.
+    Most obligations apply to high-risk systems (Article 6, Annex III); whether a
+    system is high-risk is a legal classification Keel does not make. Article 26 is
+    covered for what a deployed system can show: oversight by competent people (26(2)),
+    monitoring of operation (26(5)) and keeping the logs (26(6)); its other paragraphs
+    are organisational and not assessed.
+entries:
+- ref: Art. 15
+  title: Accuracy, Robustness and Cybersecurity
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: covered
+  threats:
+  - T-SOURCE-POISON
+  - T-SUPPLY-DEPS
+  - T-DATA-LEAK
+  - T-METADATA-LEAK
+  - T-CROSS-TENANT
+  - T-TOOL-ABUSE
+  - T-CMD-INJECT
+  - T-CODEGEN
+  - T-CRED-THEFT
+  - T-SSRF
+  - T-DOS
+  - T-HALLUCINATION
+- ref: Art. 14
+  title: Human Oversight
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: covered
+  threats:
+  - T-TOOL-ABUSE
+  - T-HALLUCINATION
+  mitigations:
+  - CTRL-HUMAN-IN-LOOP
+  - CTRL-HACT-CRITICAL
+  - CTRL-RISK-BASED-APPROVAL
+  - CTRL-IRREVERSIBLE-ACTION-GUARD
+  - CTRL-PLAN-CONFIRMATION
+  - CTRL-FATIGUE-DETECTION
+  - CTRL-APPROVAL-THROTTLING
+  - CTRL-SOURCE-REFERENCES
+- ref: Art. 12
+  title: Record-Keeping
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: covered
+  mitigations:
+  - CTRL-AUDIT-LOGGING
+- ref: Art. 9
+  title: Risk Management System
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: out_of_scope
+  note: >-
+    A process the provider runs over the whole lifecycle. A Keel assessment is input to
+    it (the risks found and the measures asked for), but the process itself is an
+    organisational obligation, not a property of the system Keel assesses.
+- ref: Art. 10
+  title: Data and Data Governance
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: out_of_scope
+  note: >-
+    Governance of the training, validation and testing data: quality, representativeness,
+    bias examination. That is the model builder's process. Poisoning of the data a
+    deployed system reads at run time is assessed under Article 15.
+- ref: Art. 26
+  title: Obligations of Deployers of High-Risk AI Systems
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other parties
+  state: covered
+  mitigations:
+  - CTRL-ACTIVITY-ANOMALY-DETECTION
+  - CTRL-AUDIT-LOGGING
+  - CTRL-HUMAN-IN-LOOP
+- ref: Art. 55
+  title: Obligations of Providers of General-Purpose AI Models with Systemic Risk
+  group: Chapter V, Section 3 - Obligations of providers of general-purpose AI models with systemic risk
+  state: out_of_scope
+  note: >-
+    Binds the provider of a general-purpose model with systemic risk, including the
+    model's own cybersecurity and adversarial testing. Keel assesses systems built on
+    such a model, not the model provider.
