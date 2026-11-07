@@ -87,8 +87,9 @@ export interface Mitigation {
 }
 
 export interface CoverageEntry { ref: string; title: string; group?: string | null; state: "covered" | "out_of_scope" | "gap"; threats?: string[]; mitigations?: string[]; note?: string | null }
+export type SourceKind = "regulation" | "standard" | "best_practice";
 export interface CoverageSource {
-  source: { id: string; title: string; version: string; checked: string; url?: string; note?: string; entry_count?: number };
+  source: { id: string; title: string; kind: SourceKind; version: string; checked: string; url?: string; note?: string; entry_count?: number };
   counts: { covered: number; out_of_scope: number; gap: number };
   entries: CoverageEntry[];
 }

@@ -117,7 +117,7 @@ export function ReportView({ r, lib, systems }: { r: R; lib: Lib; systems: Syste
         meta={[<span className={`status ${r.status}`}>{cap(r.status)}</span>, <span className="num">Assessed {r.date}</span>, `by ${assessorName(r.assessor)}`,
           P.minutes ? <span className="num">{P.minutes} min run</span> : null, r.delta_summary ? "Re-assessment" : "First assessment"]}
         lede={lede}
-        actions={<><ShareButton r={r} fixes={P.open.length} /><Link className="btn" to={`/compliance/${r.system_id}`} data-no-export>Against the frameworks</Link></>} />
+        actions={<><ShareButton r={r} fixes={P.open.length} /><Link className="btn" to={`/compliance/${r.system_id}`} data-no-export>Compliance</Link></>} />
 
       {oq.length > 0 && <div className="qbox" id="questions">
         <h2>{plural(oq.length, "question")} before this report is final</h2>

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router";
 import { MITIGATIONS, THREATS, useApi } from "../lib/api";
 import type { CoverageSource, Mitigation, Report, SystemRow, Threat } from "../lib/types";
-import { cap, clip, firstSentence, plural } from "../lib/text";
+import { KIND, KINDS, cap, clip, firstSentence, plural } from "../lib/text";
 import { findingTitle, prepare } from "../lib/report";
 import { Head, Legend, Loading, Problem, Sev, Shell, Stack, Toggle } from "../components/ui";
 import { byId } from "./Report";
@@ -101,15 +101,17 @@ export function CoveragePage() {
   const rows = view === "state" ? [...cs.entries].sort((a, b) => rank.indexOf(a.state) - rank.indexOf(b.state)) : [...cs.entries].sort((a, b) => String(a.group).localeCompare(String(b.group)));
   let lastG: string | null | undefined = undefined;
   const p = (x: CoverageSource["counts"]) => [["covered", x.covered], ["out_of_scope", x.out_of_scope], ["gap", x.gap]] as [string, number][];
-  const rail = <><h2>Frameworks</h2>{sources.map((x) => <Link key={x.source.id} className="item" to={`/coverage/${x.source.id}`} aria-current={x.source.id === cs.source.id ? "page" : undefined}>
-    <b>{x.source.title}</b><span>{x.counts.covered} covered · {plural(x.counts.gap, "gap")}</span><Stack parts={p(x.counts)} total={x.entries.length} label={`${x.counts.covered} covered, ${x.counts.gap} gaps`} /></Link>)}</>;
+  const rail = <>{KINDS.map((k, i) => { const xs = sources.filter((x) => x.source.kind === k); return <div key={k} style={{ marginTop: i ? 22 : 0 }}><h2>{KIND[k].many}</h2>
+    {xs.length === 0 && <p className="t3 small" style={{ padding: "4px 0" }}>None tracked yet.</p>}
+    {xs.map((x) => <Link key={x.source.id} className="item" to={`/coverage/${x.source.id}`} aria-current={x.source.id === cs.source.id ? "page" : undefined}>
+    <b>{x.source.title}</b><span>{x.counts.covered} covered · {plural(x.counts.gap, "gap")}</span><Stack parts={p(x.counts)} total={x.entries.length} label={`${x.counts.covered} covered, ${x.counts.gap} gaps`} /></Link>)}</div>; })}</>;
   return (
     <Shell title={`${cs.source.title} coverage`} rail={rail}>
-      <Head title={cs.source.title} meta={[cs.source.version, <span className="num">checked {cs.source.checked}</span>, cs.source.url ? <a href={cs.source.url} target="_blank" rel="noopener noreferrer">the framework</a> : null]}
+      <Head title={cs.source.title} meta={[KIND[cs.source.kind]?.one, cs.source.version, <span className="num">checked {cs.source.checked}</span>, cs.source.url ? <a href={cs.source.url} target="_blank" rel="noopener noreferrer">the framework</a> : null]}
         lede={<><p className="lede"><b>The library covers {c.covered} of {n} entries.</b> {c.out_of_scope} are out of scope for a deployed system, {plural(c.gap, "gap")}.</p>
           <Stack big parts={p(c)} total={n} label={`${c.covered} covered, ${c.out_of_scope} out of scope, ${c.gap} gaps`} />
           <Legend items={[["covered", "Covered", c.covered], ["out_of_scope", "Out of scope", c.out_of_scope], ["gap", "Gap", c.gap]]} />
-          <p className="t2 small" style={{ maxWidth: "72ch" }}>This page measures the library against the framework. How one assessed system stands against it is on <Link to="/compliance">Compliance</Link>.</p></>} />
+          <p className="t2 small" style={{ maxWidth: "72ch" }}>This page measures the library: what Keel can assess against this {cs.source.kind === "best_practice" ? "framework" : KIND[cs.source.kind]?.one.toLowerCase()}. How each assessed system stands against it is on <Link to="/compliance">Compliance</Link>.</p></>} />
       <Toggle label="Order" value={view} onChange={setView} options={[["state", "Gaps first"], ["group", "By group"]]} />
       <table className="tbl"><thead><tr><th style={{ width: 100 }}>Entry</th><th>Name</th><th style={{ width: 130 }}>State</th><th>Covered by</th></tr></thead><tbody>
         {rows.flatMap((e) => {

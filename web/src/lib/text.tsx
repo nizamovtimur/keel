@@ -14,6 +14,13 @@ export const shortTitle = (t?: string | null, max = 90) => {
   const cut = s.search(/[:;—]| - /);
   return clip(cut > 24 ? s.slice(0, cut) : s, max);
 };
+/** What a tracked source is. Compliance is asked of the first two only. */
+export const KIND: Record<"regulation" | "standard" | "best_practice", { one: string; many: string }> = {
+  regulation: { one: "Regulation", many: "Regulations" },
+  standard: { one: "Standard", many: "Standards" },
+  best_practice: { one: "Best practice", many: "Best practice" },
+};
+export const KINDS = ["regulation", "standard", "best_practice"] as const;
 export const clip = (t: string, n: number) => (t.length > n ? t.slice(0, n).replace(/\s+\S*$/, "") + "…" : t);
 export const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? one : many}`;
 

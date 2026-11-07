@@ -24,7 +24,7 @@ Hazard-label conventions on graphite paper. The owner chose the palette on 7 Nov
 - **Work first, method folded.** A report opens on "Fix these first", then risks, then all fixes. How it was assessed (waiting, ruled out, surfaces, questions, evidence) is folded at the foot.
 - **One view per page.** There is no audience switch. The local app is the assessor's full view; the product team gets the export ("Share with the team": Confluence page and one Jira ticket per fix, a single-file page, or a link).
 - **Empty is said once.** A card with nothing written says what is missing in one line and links to the editor, instead of rendering empty panels.
-- **Compliance is computed, not stored.** `keel/services/compliance_service.py` works it out from coverage and the latest report on every request. The tracked frameworks are threat lists, not regulations; the page says so.
+- **Compliance is computed, not stored.** `keel/services/compliance_service.py` works it out from coverage and the latest report on every request. Each coverage source says what it is (`kind`: regulation, standard or best practice). Compliance shows regulations and standards first and best practice apart, so a gap against a threat list never reads as a breach; Coverage groups the library's sources the same way.
 
 ## Responsive
 
