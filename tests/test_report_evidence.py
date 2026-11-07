@@ -107,7 +107,9 @@ def test_a_question_says_where_the_assessor_looked():
 # --- save: links hold together ------------------------------------------------------- #
 
 def test_a_well_formed_report_saves_and_has_nothing_open(archive):
-    result = _save(archive, _report())
+    review = {"by": "fresh reviewer", "verdict": "stands", "note": "re-read [1]"}
+    ledger = [{"id": "S1", "kind": "entry", "name": "chat", "where": "/chat", "outcome": ["T-A"]}]
+    result = _save(archive, _report(findings=[_finding(review=review)], surfaces=ledger))
     assert result["success"] and result["open"] == []
 
 
@@ -199,8 +201,11 @@ def test_finalize_refuses_a_finding_with_no_evidence(archive):
 
 def test_finalize_goes_through_once_everything_is_established(archive):
     answered = {**Q_OPEN, "answer": "Yes, it is behind the public load balancer."}
-    b = _finding(id="T-B", harm="data-exposed")
-    _save(archive, _report(open_questions=[answered], findings=[_finding(), b]))
+    review = {"by": "fresh reviewer", "verdict": "stands", "note": "re-read [1]; no check on the way"}
+    b = _finding(id="T-B", harm="data-exposed", review=review)
+    ledger = [{"id": "S1", "kind": "entry", "name": "chat", "where": "/chat", "outcome": ["T-A", "T-B"]}]
+    _save(archive, _report(open_questions=[answered], findings=[_finding(review=review), b],
+                           surfaces=ledger))
     assert report_service.finalize_report("demo", "2026-11-06")["report"]["status"] == "final"
 
 

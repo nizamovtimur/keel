@@ -25,6 +25,8 @@ VALID_REPORT = {
     "assessor": "Jane Doe <jane@example.com>",
     "findings": [],
     "discarded": [],
+    "surfaces": [{"id": "S1", "kind": "entry", "name": "checkout API", "where": "/api/checkout",
+                  "note": "no model on this path"}],
 }
 
 
