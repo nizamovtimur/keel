@@ -433,8 +433,8 @@ entries:
   title: AI regulatory sandboxes
   group: Chapter VI - Measures in support of innovation
   state: out_of_scope
-  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
-    may offer. It governs how a system is tested under supervision, not how it behaves.
+  note: Member States must set up AI regulatory sandboxes; taking part is voluntary for providers. It
+    governs supervised development and testing, not how a deployed system behaves.
 - ref: Art. 58
   title: Detailed arrangements for, and functioning of, AI regulatory sandboxes
   group: Chapter VI - Measures in support of innovation
@@ -446,14 +446,15 @@ entries:
     in the AI regulatory sandbox
   group: Chapter VI - Measures in support of innovation
   state: out_of_scope
-  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
-    may offer. It governs how a system is tested under supervision, not how it behaves.
+  note: Conditions for processing personal data inside a regulatory sandbox, including an isolated data
+    environment and its logs. A data-protection regime for the sandbox, not for the deployed system.
 - ref: Art. 60
   title: Testing of high-risk AI systems in real world conditions outside AI regulatory sandboxes
   group: Chapter VI - Measures in support of innovation
   state: out_of_scope
-  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
-    may offer. It governs how a system is tested under supervision, not how it behaves.
+  note: 'Testing high-risk systems in real-world conditions before release: the plan, approval, consent
+    and oversight. It includes that the system''s outputs can be reversed and disregarded (60(4)(k)),
+    the same property Article 14 asks of a deployed system and mapped there.'
 - ref: Art. 60a
   title: Testing of high-risk AI systems covered by Union harmonisation legislation listed in Section
     B of Annex I in real-world conditions outside AI regulatory sandboxes
@@ -465,68 +466,68 @@ entries:
   title: Informed consent to participate in testing in real world conditions outside AI regulatory sandboxes
   group: Chapter VI - Measures in support of innovation
   state: out_of_scope
-  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
-    may offer. It governs how a system is tested under supervision, not how it behaves.
+  note: The provider must obtain informed consent from the people a real-world test involves. A duty about
+    running a test, not about the deployed system.
 - ref: Art. 62
   title: Measures for providers and deployers, in particular SMEs, including start-ups
   group: Chapter VI - Measures in support of innovation
   state: out_of_scope
-  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
-    may offer. It governs how a system is tested under supervision, not how it behaves.
+  note: 'Support for SMEs and start-ups: priority sandbox access, training, lower fees and an information
+    platform run by the AI Office. Binds authorities, not the system.'
 - ref: Art. 63
   title: Derogations for specific operators
   group: Chapter VI - Measures in support of innovation
   state: out_of_scope
-  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
-    may offer. It governs how a system is tested under supervision, not how it behaves.
+  note: Lets microenterprises meet certain elements of the quality management system in a simplified way.
+    An organisational concession, not a property of the system.
 - ref: Art. 64
   title: AI Office
   group: Chapter VII, Section 1 - Governance at Union level
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: Sets up the Union and national bodies that run the Regulation and their tasks. Binds the Commission,
+    the Board, experts and Member States, not the system Keel assesses.
 - ref: Art. 65
   title: Establishment and structure of the European Artificial Intelligence Board
   group: Chapter VII, Section 1 - Governance at Union level
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: Sets up the Union and national bodies that run the Regulation and their tasks. Binds the Commission,
+    the Board, experts and Member States, not the system Keel assesses.
 - ref: Art. 66
   title: Tasks of the Board
   group: Chapter VII, Section 1 - Governance at Union level
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: Sets up the Union and national bodies that run the Regulation and their tasks. Binds the Commission,
+    the Board, experts and Member States, not the system Keel assesses.
 - ref: Art. 67
   title: Advisory forum
   group: Chapter VII, Section 1 - Governance at Union level
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: Sets up the Union and national bodies that run the Regulation and their tasks. Binds the Commission,
+    the Board, experts and Member States, not the system Keel assesses.
 - ref: Art. 68
   title: Scientific panel of independent experts
   group: Chapter VII, Section 1 - Governance at Union level
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: Sets up the Union and national bodies that run the Regulation and their tasks. Binds the Commission,
+    the Board, experts and Member States, not the system Keel assesses.
 - ref: Art. 69
   title: Access to the pool of experts by the Member States
   group: Chapter VII, Section 1 - Governance at Union level
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: How Member States may call on the scientific panel's experts, and pay for them. Binds Member States
+    and the Commission, not the system.
 - ref: Art. 70
   title: Designation of national competent authorities and single points of contact
   group: Chapter VII, Section 2 - National competent authorities
   state: out_of_scope
-  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
-    assessment bodies, not the system Keel assesses.
+  note: Sets up the Union and national bodies that run the Regulation and their tasks. Binds the Commission,
+    the Board, experts and Member States, not the system Keel assesses.
 - ref: Art. 71
   title: EU database for high-risk AI systems listed in Annex III
   group: Chapter VIII - EU database for high-risk AI systems
   state: out_of_scope
-  note: The EU database of registered high-risk systems, run by the Commission. Binds authorities and
-    conformity assessment bodies, not the system Keel assesses.
+  note: The EU database of registered systems, run by the Commission, into which providers and public
+    deployers enter their data (71(2), (3)). Registration, organisational.
 - ref: Art. 72
   title: Post-market monitoring by providers and post-market monitoring plan for high-risk AI systems
   group: Chapter IX, Section 1 - Post-market monitoring
@@ -629,8 +630,8 @@ entries:
   title: Union AI testing support structures
   group: Chapter IX, Section 3 - Enforcement
   state: out_of_scope
-  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
-    and conformity assessment bodies, not the system Keel assesses.
+  note: The Commission designates Union AI testing support structures that advise authorities. Binds the
+    Commission, not the system.
 - ref: Art. 85
   title: Right to lodge a complaint with a market surveillance authority
   group: Chapter IX, Section 4 - Remedies
@@ -701,8 +702,8 @@ entries:
   title: Codes of conduct for voluntary application of specific requirements
   group: Chapter X - Codes of conduct and guidelines
   state: out_of_scope
-  note: Voluntary codes of conduct. They bind only those who sign up, and say nothing a deployed system
-    must do by law.
+  note: Codes of conduct for applying some requirements voluntarily. Nothing in them is a legal duty on
+    a deployed system.
 - ref: Art. 96
   title: Guidelines from the Commission on the implementation of this Regulation
   group: Chapter X - Codes of conduct and guidelines
@@ -724,8 +725,8 @@ entries:
   title: Penalties
   group: Chapter XII - Penalties
   state: out_of_scope
-  note: Penalties Member States set for infringements. The consequence of a breach, not a requirement
-    of its own.
+  note: Penalties for infringements, with the maximum fines this Regulation sets (99(3)-(5)) and Member
+    States lay down. The consequence of a breach, not a requirement of its own.
 - ref: Art. 100
   title: Administrative fines on Union institutions, bodies, offices and agencies
   group: Chapter XII - Penalties
@@ -787,7 +788,9 @@ entries:
     placed on the marked
   group: Chapter XIII - Final provisions
   state: out_of_scope
-  note: When the Regulation applies to systems already on the market. A transitional rule about dates.
+  note: When the Regulation applies to systems and general-purpose models already on the market. 111(4)
+    gives providers of systems generating synthetic content until 2 December 2026 to meet the marking
+    duty of Article 50(2), which is mapped (as a gap) there.
 - ref: Art. 112
   title: Evaluation and review
   group: Chapter XIII - Final provisions
@@ -847,14 +850,15 @@ entries:
     Article 49
   group: Annexes
   state: out_of_scope
-  note: What is submitted when a high-risk system is registered. Registration data, organisational.
+  note: What providers, and deployers that are public authorities, submit when registering a high-risk
+    system, or a system found not to be high-risk under Article 6(3). Registration data, organisational.
 - ref: Annex IX
   title: Information to be submitted upon the registration of high-risk AI systems listed in Annex III
     in relation to testing in real world conditions in accordance with Article 60
   group: Annexes
   state: out_of_scope
-  note: What is submitted when a high-risk system tested in real-world conditions is registered. Registration
-    data, organisational.
+  note: 'What is submitted when a real-world test of a high-risk system is registered: the test, its plan
+    and its suspension. Registration data, organisational.'
 - ref: Annex X
   title: Union legislative acts on large-scale IT systems in the area of Freedom, Security and Justice
   group: Annexes
