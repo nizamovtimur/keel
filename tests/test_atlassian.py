@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 import yaml
 
-from keel.atlassian import cli, render
+from keel.atlassian import cli, picture, render
 from keel.atlassian.client import Api, AtlassianError, Confluence, Jira
 from keel.atlassian.picture import chain_png
 from keel.schemas.report import Report
@@ -225,6 +225,32 @@ def test_the_picture_is_a_png(store):
     r = Report(**report())
     data = chain_png(r, r.findings[0], load_vocabularies(store.dir), "No refund above 50 EUR")
     assert data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) > 2000
+
+
+def _draws(font, char: str) -> bytes:
+    return bytes(font.getmask(char))
+
+
+def test_the_picture_font_draws_cyrillic():
+    # A Russian report must not come out as empty boxes in Confluence and Jira.
+    if picture.font_file() is None:
+        pytest.skip("no system font with Cyrillic on this machine; set KEEL_PICTURE_FONT")
+    font = picture._font(12)
+    missing = _draws(font, "￿")
+    for char in "ЖщЮя—":
+        assert _draws(font, char) != missing, f"{char!r} is drawn as the missing-glyph box"
+
+
+def test_a_pinned_font_wins(monkeypatch, tmp_path):
+    pinned = tmp_path / "house.ttf"
+    pinned.write_bytes(b"")
+    monkeypatch.setenv("KEEL_PICTURE_FONT", str(pinned))
+    picture.font_file.cache_clear()
+    try:
+        assert picture.font_file() == str(pinned)
+    finally:
+        monkeypatch.delenv("KEEL_PICTURE_FONT")
+        picture.font_file.cache_clear()
 
 
 # --------------------------------------------------------------------------- #

@@ -3,12 +3,20 @@ cuts the chain.
 
 A picture carries one relationship, so this draws the chain and nothing else; the rest of
 the finding stays in text beside it. It is a PNG because Confluence Cloud does not show
-an attached SVG reliably and both Confluence and Jira show a PNG everywhere. The font is
-the one Pillow ships, so the picture comes out the same on every machine.
+an attached SVG reliably and both Confluence and Jira show a PNG everywhere.
+
+Reports can be written in any language, and the font Pillow ships has Latin letters only,
+so a Russian report would come out as empty boxes. The picture uses the first system font
+found that also covers Cyrillic (DejaVu Sans on Linux, Arial or Segoe UI on Windows, Arial
+on macOS). `KEEL_PICTURE_FONT` names a `.ttf` file to use instead, for a picture that is
+the same on every machine.
 """
 from __future__ import annotations
 
+import functools
 import io
+import os
+from pathlib import Path
 from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
@@ -26,7 +34,32 @@ SEVERITY_EDGE = {"high": (222, 53, 11), "medium": (255, 139, 0), "low": (54, 179
 SEVERITY_FILL = {"high": (255, 244, 240), "medium": (255, 250, 230), "low": (227, 252, 239)}
 
 
+_FONT_CANDIDATES = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+    "/usr/share/fonts/noto/NotoSans-Regular.ttf",
+    "/Library/Fonts/Arial.ttf",
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    str(Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / "arial.ttf"),
+    str(Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / "segoeui.ttf"),
+)
+
+
+@functools.cache
+def font_file() -> str | None:
+    """The font the picture is drawn with, or None when no font with Cyrillic is found."""
+    pinned = os.environ.get("KEEL_PICTURE_FONT")
+    if pinned:
+        return pinned
+    return next((p for p in _FONT_CANDIDATES if Path(p).is_file()), None)
+
+
 def _font(size: int):
+    path = font_file()
+    if path:
+        return ImageFont.truetype(path, size * SCALE)
     return ImageFont.load_default(size=size * SCALE)
 
 
