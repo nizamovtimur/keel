@@ -1,0 +1,58 @@
+# Publish Keel's read-only site to GitHub Pages.
+#
+# 1. Copy this file to .github/workflows/pages.yml in your copy of Keel.
+# 2. In the repository: Settings > Pages > Build and deployment > Source: GitHub Actions.
+# 3. Decide who can see the site before the first run. On GitHub Enterprise Cloud set the
+#    Pages visibility to private, so only people with read access to the repository can
+#    open it. On other GitHub plans a Pages site is public on the internet, so publish the
+#    catalog only and keep reports out. See docs/adopt.md.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install Keel
+        run: uv sync --frozen --no-dev
+
+      - name: Check the catalog
+        run: uv run keel validate
+
+      - name: Build the site
+        # Catalog only. To publish final reports as well, add: --reports reports
+        # (only when the Pages site is private; see step 3 above).
+        run: uv run keel site --out public --title "Keel threat model"
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

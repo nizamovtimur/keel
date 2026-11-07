@@ -1,8 +1,39 @@
-# Skills, UI and interfaces
+# Commands, skills, UI and interfaces
+
+## Which one for which job
+
+| Job | Use |
+| --- | --- |
+| Assess a system | Your coding agent, with Keel's MCP server and the `assess-genai-with-library` skill |
+| Correct and finalize a report, edit the catalog through forms | The local UI: `keel up` |
+| Review a catalog change | A pull request on your Git host, with CI running `keel validate` |
+| Show the catalog or a report to people who do not run Keel | The read-only site: `keel site`, published with GitHub Pages or GitLab Pages |
+| Script against the catalog | The REST API behind the local UI, or the MCP tools |
+
+## Commands
+
+Run each with `uv run` in front, or directly once Keel's environment is active.
+
+| Command | Does |
+| --- | --- |
+| `keel validate` | Checks the catalog: schema, fixed vocabularies, links between records, id and filename agreement, coverage claims. Prints warnings for unfinished cards; exits non-zero only on errors. |
+| `keel validate --strict` | The same, with warnings counted as errors. |
+| `keel up` | Starts the local UI and REST API in the background at `http://127.0.0.1:8420/`, or says where it is already running. Safe to run at the start of every session. `UI_PORT` changes the port. |
+| `keel down` | Stops it. |
+| `keel site --out DIR` | Builds the read-only HTML site of the catalog into `DIR` (default `public`). Options: `--reports DIR` adds final reports, `--include-drafts` adds drafts too, `--title` names the site. See [Publish the read-only site](adopt.md#publish-the-read-only-site). |
+| `keel schema` | Regenerates the JSON Schema files under `schema/`. |
+| `keel schema --check` | Fails when those files are stale. CI runs it. |
+| `keel style-guide export` | Prints the whole style guide as YAML. |
+| `keel style-guide import FILE [--replace]` | Loads a style guide from YAML, merging by default. |
+| `keel` | Runs the MCP server over stdio. Agents start this themselves. |
+| `keel --http` | Runs the MCP server over Streamable HTTP on port 8001, loopback only. |
+| `docker compose up` | The local UI in a container at `http://localhost:8000/`. Add `--profile mcp` for the HTTP MCP server on `:8001`. |
+
+Settings come from environment variables or `.env`: `CATALOG_DIR` and `REPORTS_DIR` point at other folders, `UI_PORT` moves the UI, `ALLOWED_HOSTS` lists the names the UI answers to, `REPO_URL` adds an "Edit on GitHub" link in the UI.
 
 ## Skills
 
-Under `.claude/skills/`, in two groups.
+The same set is in `.claude/skills/` (Claude Code reads only its own folder) and `.agents/skills/` (every other agent). A test fails if the two drift, so edit one and copy it to the other.
 
 ### Assessing a system
 
@@ -20,7 +51,7 @@ Every report carries a `meta` block recording how the run went: the questions th
 
 See [Authoring](authoring.md) for how the two work together.
 
-## The UI
+## The local UI
 
 <p align="center"><img src="img/ui-preview.svg" alt="Keel's three-pane threat editor: the threat list on the left, a form built from the JSON Schema in the middle, and preview or field guidance on the right" width="900"></p>
 
@@ -34,18 +65,24 @@ The interface is review-first. The fastest way to author is to ask an LLM throug
 
 **Style guide** edits the authoring guidance itself, with a field tree derived from the model so the guidance cannot describe fields that no longer exist. Orphan guidance is flagged.
 
-`keel schema` regenerates the files under `schema/`, and `keel schema --check` fails when they are stale. CI runs it as a gate.
+**Reports** is where an assessor reads a draft, corrects grades and wording, and presses Finalize.
+
+The UI and the MCP server are two processes over the same files, and each picks up what the other writes without a restart.
+
+### Why it stays on your machine
+
+The API writes your catalog and has no login, so being local is its whole access control. It binds to loopback, answers only to `localhost` and `127.0.0.1`, sends no CORS headers, and refuses a write that comes from another site. The container publishes its ports on the host's loopback for the same reason. To serve it to other machines, put something that authenticates in front of it and add its name to `ALLOWED_HOSTS`. For a shared view, the read-only site is the simpler answer.
 
 ## Interfaces
 
-**MCP** is primary: `stdio` for local Claude Code, `--http` for remote clients. Threats and their mitigation links, mitigations, the style guide, coverage rows, search across everything, reports, and library health.
+**MCP** is primary: `stdio` for local agents, `--http` for remote clients. Threats and their mitigation links, mitigations, the style guide, coverage rows, search across everything, reports, and library health.
 
-**REST** reads and writes over `/threats`, `/mitigations`, `/style-guide`, `/coverage`, `/reports`, `/search`, `/schema/{entity}`, `/rules`, `/vocabulary`, `/health`, plus `POST /threats/validate` behind the editor.
+**REST** reads and writes under `/api`: `/api/threats`, `/api/mitigations`, `/api/style-guide`, `/api/coverage`, `/api/reports`, `/api/search`, `/api/schema/{entity}`, `/api/rules`, `/api/vocabulary`, plus `POST /api/threats/validate` behind the editor. `/health` sits outside `/api`.
 
 The MCP tools and the REST writes share one service layer, so every edit lands in `catalog/*.yaml` the same way. The two run as separate processes, and each reloads the catalog when the files change underneath it, so an entry written through one shows up in the other, as does a hand edit or a `git pull`.
 
-Both listen on loopback only. Neither has a login, so the REST app also checks the host name a request asks for and refuses writes that come from another site, and `keel --http` will not bind to any other address unless `MCP_HTTP_ALLOW_REMOTE` is set.
+Both listen on loopback only. `keel --http` will not bind to any other address unless `MCP_HTTP_ALLOW_REMOTE` is set.
 
 ## Roadmap
 
-Per-system state, to mark a threat not applicable for a given deployment or to accept a risk, so known noise can be suppressed without deleting shared knowledge. Until then, that context is expressed by editing or pruning your fork.
+Per-system state, to mark a threat not applicable for a given deployment or to accept a risk, so known noise can be suppressed without deleting shared knowledge. Until then, that context lives in each report's ruled-out list, or in your copy of the catalog.

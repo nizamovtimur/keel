@@ -2,6 +2,26 @@
 
 Writing into the model is gated in three places, and they check different kinds of thing. Confusing them is how a catalog fills up with fluent cards that cite nothing.
 
+## Where new content comes from
+
+An assessment is not the end of the work. A finding the catalog did not have is marked as new in the report, and that mark is what the next authoring pass is for.
+
+```mermaid
+flowchart LR
+  A["Assess a system<br/>against the catalog"] --> B["A finding the catalog<br/>did not have"]
+  B --> C{"Already answered<br/>somewhere?"}
+  C -->|covered, or out of scope| D["Record the row.<br/>Nothing to author."]
+  C -->|gap| E["Research gate:<br/>a case, the defence that shipped,<br/>what the sources call it,<br/>what you could not find"]
+  E --> F["Write to the bar:<br/>a weakness on an existing threat,<br/>or a new record"]
+  F --> G["keel validate,<br/>check-style,<br/>pull request"]
+  D --> A
+  G --> A
+```
+
+Most of what arrives is already answered, so the loop starts by finding out. That step ends as a row in the coverage matrix, and a row is a real output: it is how the model says what it deliberately does not cover without that reading as an omission.
+
+When it is a genuine gap, the authoring skill will not let the writing start until the research is done. It has stopped the author mid-card more than once.
+
 ## The research gate
 
 The `folding-into-the-model` skill will not let the writing start until the research is done. Four questions, and the fourth is answered even when the first three are not.
@@ -50,7 +70,7 @@ The gate has caught its own author. A search summary once reported a named featu
 
 ```console
 $ uv run keel validate
-Warnings (353):
+Warnings (350):
   ! CTRL-ACCESS-CONTROL: no scope
   ! CTRL-ACCESS-CONTROL: no out_of_scope
   ! CTRL-ACCESS-CONTROL: no locus
