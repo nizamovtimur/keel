@@ -268,6 +268,18 @@ dialog.share h3 { font-size: 16px; text-transform: uppercase; margin-bottom: 4px
 .risk:not(.open) .rbody { display: none; }
 @media (min-width: 1024px) { .hide-desktop { display: none; } }
 
+/* ---------- system diagram (Archify, components/SystemDiagram.tsx) ----------
+   Two shapes; the column's width picks one, so labels stay at 12 px or more. No
+   ancestor of the figure may clip, or the cards a box opens are cut off. */
+.dgm { container-type: inline-size; }
+.dgm .narrow { display: none; }
+@container (max-width: 619px) { .dgm .wide { display: none; } .dgm .narrow { display: block; } }
+/* Archify lets a figure grow to 1.45 times its canvas; at the report's widest that is a
+   screen tall. 640 px keeps labels near 13 px and the whole picture in view. */
+.dgm .wide .archify-frame { max-width: min(100%, 640px) !important; }
+.dgm .archify-risks { margin: 4px 0 0; padding-left: 18px; }
+.dgm .archify-risks li { margin: 2px 0; }
+
 /* ---------- responsive: 1440 / 768 / 375 ---------- */
 @media (max-width: 1279px) {
   .toc, .factcol { display: none; }

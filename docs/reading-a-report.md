@@ -17,6 +17,12 @@ Halo support assistant
 
 If this is a re-assessment, a box under the header says **what changed since the last assessment**. Read that first: it tells you which findings moved and why.
 
+## Where the risks sit: the system as a diagram
+
+In the app, the report page draws the assessed system. On the left, outside its trust boundary, is who or what starts each risk. Inside are the system itself, the parts it reads from (retrieved documents, memory, other agents, tool results) above it, and the parts its output reaches (tools, accounts, wherever its answers go) below it. A box's colour is its worst risk, and its second line says the same in words, for example `2 risks · high`. Point at a box, or tap it, for the risks on it; each opens its finding.
+
+Nobody draws it by hand. It is built from the report on every view, by the channel each finding crosses and the catalog weakness it lands on, or from the surface ledger when the report has one. [Archify](https://github.com/tt-a1i/archify) does the drawing, so the machine serving the UI needs Node and the archify skill (`KEEL_ARCHIFY` names its folder when it is not in `~/.agents/skills` or `~/.claude/skills`). Without them the page says so in one line, and nothing else changes.
+
 ## The findings table: what the risk owner reads
 
 | Threat | Harm | Severity | Likelihood | Origin |

@@ -6,6 +6,7 @@ import { assessorName, findingTitle, prepare, type Fix, type Prepared } from "..
 import { cap, clip, firstSentence, harmLabel, plural, STATUS, WHO } from "../lib/text";
 import { Grade, Head, Loading, Problem, Shape, Shell } from "../components/ui";
 import { ShareButton } from "../components/Share";
+import { SystemDiagram } from "../components/SystemDiagram";
 
 type Lib = { threats: Record<string, Threat>; mits: Record<string, Mitigation> };
 export const byId = <T extends { id: string }>(xs: T[]) => Object.fromEntries(xs.map((x) => [x.id, x]));
@@ -102,7 +103,7 @@ export function ReportView({ r, lib, systems }: { r: R; lib: Lib; systems: Syste
   const toc: [string, string][] = [
     ...(oq.length ? [["questions", `Open questions · ${oq.length}`] as [string, string]] : []),
     ...(P.first.length ? [["first", "Fix these first"] as [string, string]] : []),
-    ["risks", `Risks · ${P.findings.length}`], ["fixes", `All fixes · ${P.open.length}`], ["detail", "How this was assessed"],
+    ["map", "Where the risks sit"], ["risks", `Risks · ${P.findings.length}`], ["fixes", `All fixes · ${P.open.length}`], ["detail", "How this was assessed"],
   ];
   const rail = <><h2>Systems</h2>{systems.map((s) => (
     <Link key={s.system_id} className="item" to={`/reports/${s.system_id}`} aria-current={s.system_id === r.system_id ? "page" : undefined}>
@@ -132,6 +133,9 @@ export function ReportView({ r, lib, systems }: { r: R; lib: Lib; systems: Syste
         <ol className="fixes">{P.first.map((x, i) => <FixRow key={x.key} x={x} r={r} lib={lib} n={i + 1} />)}</ol>
         {rest > 0 && <p className="more">Then {plural(rest, "more fix", "more fixes")} for the medium and low risks, in <a href="#fixes">All fixes</a>.</p>}
       </div>}
+
+      <section id="map"><h2>Where the risks sit</h2><p className="sub">Who starts each risk, the parts of {r.system_name}, its trust boundary, and the part each risk lands on. Point at a box, or tap it, for its risks.</p>
+        <SystemDiagram system={r.system_id} date={r.date} /></section>
 
       <section id="risks"><h2>Risks</h2><p className="sub">Worst first. Each has its own page to hand to the developer.</p>
         {P.findings.map((f) => <RiskRow key={f.id} f={f} r={r} P={P} lib={lib} />)}</section>
