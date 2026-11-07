@@ -80,6 +80,14 @@ class CoverageEntry(BaseModel):
         "Allowed on a gap, for what it is waiting on. Refused on a covered row: why an "
         "entry answers this source belongs on the entry, in `positioning`",
     )
+    outside: str | None = Field(
+        None,
+        description="On a covered row or a gap: the parts of the entry that fall outside "
+        "Keel's boundary, and why (\"26(7)-(12): informing workers, registration and "
+        "cooperation with authorities are organisational\"). It is about the source's "
+        "entry, not about the ids answering it, so it stays true when another one joins. "
+        "A whole entry outside the boundary is out_of_scope with a note instead",
+    )
 
     @model_validator(mode="after")
     def _state_matches_content(self) -> "CoverageEntry":
@@ -106,6 +114,11 @@ class CoverageEntry(BaseModel):
                 raise ValueError(
                     "out_of_scope needs a note: a boundary without its reasoning is "
                     "indistinguishable from an omission"
+                )
+            if (self.outside or "").strip():
+                raise ValueError(
+                    "out_of_scope takes no `outside`: the whole entry is outside, and its "
+                    "note says why"
                 )
         return self
 

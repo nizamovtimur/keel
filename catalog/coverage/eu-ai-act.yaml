@@ -6,20 +6,19 @@ source:
   released: '2026-07-27'
   url: https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02024R1689-20260727
   checked: '2026-11-07'
-  entry_count: 119
-  note: >-
-    A regulation, not a threat list: a system that falls short here is in breach, not
-    merely behind best practice. Rows are whole articles. Only the articles that bind
-    the security of a deployed system are mapped so far, Article 15 first; the rest of
-    the 119 are not yet read against the library, so the import counts as unfinished.
-    Most obligations apply to high-risk systems (Article 6, Annex III); whether a
-    system is high-risk is a legal classification Keel does not make. Article 26 is
-    covered for what a deployed system can show: oversight by competent people (26(2)),
-    monitoring of operation (26(5)) and keeping the logs (26(6)); its other paragraphs
-    are organisational and not assessed.
+  entry_count: 133
+  note: 'A regulation, not a threat list: a system that falls short here is in breach, not merely behind
+    best practice. Rows are the 119 articles (1 to 113, with 4a, 60a and 75a to 75d inserted by the 2026
+    amendment) and the 14 annexes; the recitals explain the articles and are not rows. Most obligations
+    apply to high-risk systems (Article 6, Annex III), and whether a system is high-risk is a legal classification
+    Keel does not make. Where only some paragraphs of an article bind a deployed system, the row says
+    which fall outside. Two parts inside Keel''s reach have no card yet although their article is covered:
+    feedback loops in systems that keep learning (15(4)) and the deployer''s log retention (26(6)). A
+    later consolidated version changes the count, and keel validate fails until every new entry has a
+    row.'
 entries:
 - ref: Art. 15
-  title: Accuracy, Robustness and Cybersecurity
+  title: Accuracy, robustness and cybersecurity
   group: Chapter III, Section 2 - Requirements for high-risk AI systems
   state: covered
   threats:
@@ -35,8 +34,10 @@ entries:
   - T-SSRF
   - T-DOS
   - T-HALLUCINATION
+  outside: '15(2): benchmarks and measurement methods the Commission encourages; 15(3): declaring accuracy
+    levels in the instructions for use, a documentation duty.'
 - ref: Art. 14
-  title: Human Oversight
+  title: Human oversight
   group: Chapter III, Section 2 - Requirements for high-risk AI systems
   state: covered
   threats:
@@ -51,41 +52,844 @@ entries:
   - CTRL-FATIGUE-DETECTION
   - CTRL-APPROVAL-THROTTLING
   - CTRL-SOURCE-REFERENCES
+  - CTRL-ACTIVITY-ANOMALY-DETECTION
+  outside: '14(5): separate verification by two people before acting on a remote biometric identification;
+    the library does not model biometric systems.'
 - ref: Art. 12
-  title: Record-Keeping
+  title: Record-keeping
   group: Chapter III, Section 2 - Requirements for high-risk AI systems
   state: covered
   mitigations:
   - CTRL-AUDIT-LOGGING
-- ref: Art. 9
-  title: Risk Management System
-  group: Chapter III, Section 2 - Requirements for high-risk AI systems
-  state: out_of_scope
-  note: >-
-    A process the provider runs over the whole lifecycle. A Keel assessment is input to
-    it (the risks found and the measures asked for), but the process itself is an
-    organisational obligation, not a property of the system Keel assesses.
-- ref: Art. 10
-  title: Data and Data Governance
-  group: Chapter III, Section 2 - Requirements for high-risk AI systems
-  state: out_of_scope
-  note: >-
-    Governance of the training, validation and testing data: quality, representativeness,
-    bias examination. That is the model builder's process. Poisoning of the data a
-    deployed system reads at run time is assessed under Article 15.
+  outside: '12(3): the minimum log content for remote biometric identification (Annex III, point 1(a));
+    the library does not model biometric systems.'
 - ref: Art. 26
-  title: Obligations of Deployers of High-Risk AI Systems
-  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other parties
+  title: Obligations of deployers of high-risk AI systems
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
   state: covered
   mitigations:
   - CTRL-ACTIVITY-ANOMALY-DETECTION
   - CTRL-AUDIT-LOGGING
-  - CTRL-HUMAN-IN-LOOP
+  outside: '26(1)-(4) and (7)-(12), and in 26(5) everything past monitoring itself: using the system as
+    instructed, assigning competent people to oversee it, the relevance of input data, informing the provider,
+    authorities, workers and affected persons, suspending use, registration, the data protection impact
+    assessment, authorisation of post-remote biometric identification and cooperation with authorities
+    are the deployer''s organisational duties.'
+- ref: Art. 19
+  title: Automatically generated logs
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: gap
+  note: 19(1) asks the provider to keep the system's logs for a period fit for its purpose, at least six
+    months. The audit-logging card records and replays events but sets no retention period, so nothing
+    in the library answers how long they are kept.
+  outside: '19(2): how financial institutions keep the logs under financial services law.'
+- ref: Art. 13
+  title: Transparency and provision of information to deployers
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: gap
+  note: '13(1) asks that a high-risk system''s operation be transparent enough for its deployer to interpret
+    the output and use it appropriately. No card models that yet: source references let a reader check
+    a statement, not understand how the system reached it.'
+  outside: '13(2)-(3): the instructions for use and what they must contain, a documentation duty.'
+- ref: Art. 50
+  title: Transparency obligations for providers and deployers of certain AI systems
+  group: Chapter IV - Transparency obligations for providers and deployers of certain AI systems
+  state: gap
+  note: No card yet for telling people they are dealing with an AI system (50(1)), for machine-readable
+    marking of generated content (50(2)), or for disclosing deep fakes and generated text published on
+    matters of public interest (50(4)), given clearly at the first interaction or exposure (50(5)). These
+    are behaviours of a deployed system, so they are inside Keel's reach.
+  outside: '50(3): emotion recognition and biometric categorisation, which the library does not model;
+    50(6)-(7): how the obligations relate to other law, and the Commission''s codes of practice.'
+- ref: Art. 5
+  title: Prohibited AI practices
+  group: Chapter II - Prohibited AI practices
+  state: gap
+  note: Since the 2026 amendment, a system that can produce intimate imagery of an identifiable person
+    without consent, or child sexual abuse material, is prohibited unless it has technical safeguards
+    that reliably prevent it (5(1)(ba), (bb) and 5(1a)(a)(ii)). That is a behaviour of a deployed system.
+    The content-policy card is about what the organisation's own system says, not about generated imagery
+    of real people, so this is a gap.
+  outside: 'The other prohibitions in 5(1) and 5(2)-(8): uses banned for their purpose and the conditions
+    for real-time remote biometric identification by law enforcement are a legal classification Keel does
+    not make.'
+- ref: Art. 1
+  title: Subject matter
+  group: Chapter I - General provisions
+  state: out_of_scope
+  note: States the Regulation's purpose and what it lays down. No duty on a system by itself.
+- ref: Art. 2
+  title: Scope
+  group: Chapter I - General provisions
+  state: out_of_scope
+  note: Says whom and what the Regulation applies to and what it excludes. Whether a system is in scope
+    is a legal question Keel does not answer.
+- ref: Art. 3
+  title: Definitions
+  group: Chapter I - General provisions
+  state: out_of_scope
+  note: Definitions. They decide how the other articles read, but place no duty of their own.
+- ref: Art. 4
+  title: AI literacy
+  group: Chapter I - General provisions
+  state: out_of_scope
+  note: Providers and deployers take measures to support the AI literacy of their staff; 4(2) and (3)
+    task the Commission, Member States and the Board. Organisational, not a property of the system.
+- ref: Art. 4a
+  title: Processing of special categories of personal data for bias detection and correction
+  group: Chapter I - General provisions
+  state: out_of_scope
+  note: Lets providers, and deployers of high-risk systems, process special categories of personal data
+    to detect and correct bias, under conditions (pseudonymisation, access limits, deletion). A data-protection
+    permission and its safeguards, outside the security and behaviour Keel assesses.
+- ref: Art. 6
+  title: Classification rules for high-risk AI systems
+  group: Chapter III, Section 1 - Classification of AI systems as high-risk
+  state: out_of_scope
+  note: Decides whether a system is high-risk. That is a legal classification Keel does not make; Keel
+    assesses the system either way.
+- ref: Art. 7
+  title: Amendments to Annex III
+  group: Chapter III, Section 1 - Classification of AI systems as high-risk
+  state: out_of_scope
+  note: Empowers the Commission to amend the list of high-risk uses in Annex III. Binds the Commission,
+    not the system Keel assesses.
+- ref: Art. 8
+  title: Compliance with the requirements
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: out_of_scope
+  note: Requires a high-risk system to meet the requirements of Section 2. The requirements themselves
+    are mapped at Articles 9 to 15.
+- ref: Art. 9
+  title: Risk management system
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: out_of_scope
+  note: A risk management process the provider runs over the whole lifecycle. A Keel assessment is input
+    to it (the risks found and the measures asked for), but the process itself is an organisational obligation,
+    not a property of the system Keel assesses.
+- ref: Art. 10
+  title: Data and data governance
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: out_of_scope
+  note: 'Governance of the training, validation and testing data: quality, representativeness, bias examination.
+    That is the model builder''s process. Poisoning of the data a deployed system reads at run time is
+    assessed under Article 15.'
+- ref: Art. 11
+  title: Technical documentation
+  group: Chapter III, Section 2 - Requirements for high-risk AI systems
+  state: out_of_scope
+  note: The technical documentation the provider draws up before release (content in Annex IV). A documentation
+    duty; a Keel report can be part of what it cites.
+- ref: Art. 16
+  title: Obligations of providers of high-risk AI systems
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: A list of the provider's duties. The technical ones point to Section 2 and Article 19, mapped
+    there; the rest (marking, registration, declarations, corrective action) are organisational, and accessibility
+    (16(l)) follows other directives outside what Keel assesses.
+- ref: Art. 17
+  title: Quality management system
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: 'The provider''s quality management system: written policies, procedures and responsibilities.
+    An organisational system, not a property of the AI system.'
+- ref: Art. 18
+  title: Documentation keeping
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: How long the provider keeps documentation available to authorities. A record-keeping duty about
+    papers, not about the system's own logs (those are Articles 12 and 19).
+- ref: Art. 20
+  title: Corrective actions and duty of information
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: 'What the provider must do when a system does not conform: correct, withdraw, recall and inform.
+    A process duty after the fact.'
+- ref: Art. 21
+  title: Cooperation with competent authorities
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: Providers must give authorities information and access to logs on request. Cooperation with authorities,
+    organisational.
+- ref: Art. 22
+  title: Authorised representatives of providers of high-risk AI systems
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: A duty of an operator in the value chain (representative, importer) to check papers, keep records
+    and cooperate. Organisational, not a property of the system.
+- ref: Art. 23
+  title: Obligations of importers
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: A duty of an operator in the value chain (representative, importer) to check papers, keep records
+    and cooperate. Organisational, not a property of the system.
+- ref: Art. 24
+  title: Obligations of distributors
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: 'A distributor''s duties: check marking and papers, keep the system in conformity while it holds
+    it, take corrective action and inform authorities. Organisational, not a property of the system.'
+- ref: Art. 25
+  title: Responsibilities along the AI value chain
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: Who counts as the provider when a system is rebranded or modified, and what the parties in the
+    value chain owe each other. Contractual and legal allocation of duties.
+- ref: Art. 27
+  title: Fundamental rights impact assessment for high-risk AI systems
+  group: Chapter III, Section 3 - Obligations of providers and deployers of high-risk AI systems and other
+    parties
+  state: out_of_scope
+  note: Certain deployers assess the impact on fundamental rights before first use. A legal assessment
+    of a different kind; Keel's security assessment is not one and does not replace it.
+- ref: Art. 28
+  title: Notifying authorities
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 29
+  title: Application of a conformity assessment body for notification
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 30
+  title: Notification procedure
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 31
+  title: Requirements relating to notified bodies
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 32
+  title: Presumption of conformity with requirements relating to notified bodies
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 33
+  title: Subsidiaries of notified bodies and subcontracting
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 34
+  title: Operational obligations of notified bodies
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 35
+  title: Identification numbers and lists of notified bodies
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 36
+  title: Changes to notifications
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 37
+  title: Challenge to the competence of notified bodies
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 38
+  title: Coordination of notified bodies
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 39
+  title: Conformity assessment bodies of third countries
+  group: Chapter III, Section 4 - Notifying authorities and notified bodies
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 40
+  title: Harmonised standards and standardisation deliverables
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 41
+  title: Common specifications
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 42
+  title: Presumption of conformity with certain requirements
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 43
+  title: Conformity assessment
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 44
+  title: Certificates
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 45
+  title: Information obligations of notified bodies
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: Rules for notifying authorities and notified bodies. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 46
+  title: Derogation from conformity assessment procedure
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: Lets a market surveillance authority authorise a system before its conformity assessment, and
+    law enforcement or civil protection authorities use one in urgency; if authorisation is refused, they
+    stop the use and discard its outputs (46(2)). Decisions of authorities, not a property of the system.
+- ref: Art. 47
+  title: EU declaration of conformity
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 48
+  title: CE marking
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: The CE marking, including a digital marking reachable from the system's interface (48(2)). A conformity
+    label, not a security or behaviour property Keel assesses.
+- ref: Art. 49
+  title: Registration
+  group: Chapter III, Section 5 - Standards, conformity assessment, certificates, registration
+  state: out_of_scope
+  note: 'Part of the conformity system: standards and common specifications, conformity assessment, certificates,
+    declarations, marking and registration, run by the Commission, notified bodies and providers. A paper
+    and procedural matter, not a property of the running system.'
+- ref: Art. 51
+  title: Classification of general-purpose AI models as general-purpose AI models with systemic risk
+  group: Chapter V, Section 1 - Classification rules
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 52
+  title: Procedure
+  group: Chapter V, Section 1 - Classification rules
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 53
+  title: Obligations for providers of general-purpose AI models
+  group: Chapter V, Section 2 - Obligations for providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 54
+  title: Authorised representatives of providers of general-purpose AI models
+  group: Chapter V, Section 2 - Obligations for providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
 - ref: Art. 55
-  title: Obligations of Providers of General-Purpose AI Models with Systemic Risk
+  title: Obligations of providers of general-purpose AI models with systemic risk
   group: Chapter V, Section 3 - Obligations of providers of general-purpose AI models with systemic risk
   state: out_of_scope
-  note: >-
-    Binds the provider of a general-purpose model with systemic risk, including the
-    model's own cybersecurity and adversarial testing. Keel assesses systems built on
-    such a model, not the model provider.
+  note: Binds the provider of a general-purpose model with systemic risk, including the model's own cybersecurity
+    and adversarial testing. Keel assesses systems built on such a model, not the model provider.
+- ref: Art. 56
+  title: Codes of practice
+  group: Chapter V, Section 4 - Codes of practice
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 57
+  title: AI regulatory sandboxes
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 58
+  title: Detailed arrangements for, and functioning of, AI regulatory sandboxes
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 59
+  title: Further processing of personal data for developing certain AI systems in the public interest
+    in the AI regulatory sandbox
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 60
+  title: Testing of high-risk AI systems in real world conditions outside AI regulatory sandboxes
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 60a
+  title: Testing of high-risk AI systems covered by Union harmonisation legislation listed in Section
+    B of Annex I in real-world conditions outside AI regulatory sandboxes
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 61
+  title: Informed consent to participate in testing in real world conditions outside AI regulatory sandboxes
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 62
+  title: Measures for providers and deployers, in particular SMEs, including start-ups
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 63
+  title: Derogations for specific operators
+  group: Chapter VI - Measures in support of innovation
+  state: out_of_scope
+  note: Regulatory sandboxes, real-world testing and support measures that Member States and authorities
+    may offer. It governs how a system is tested under supervision, not how it behaves.
+- ref: Art. 64
+  title: AI Office
+  group: Chapter VII, Section 1 - Governance at Union level
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 65
+  title: Establishment and structure of the European Artificial Intelligence Board
+  group: Chapter VII, Section 1 - Governance at Union level
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 66
+  title: Tasks of the Board
+  group: Chapter VII, Section 1 - Governance at Union level
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 67
+  title: Advisory forum
+  group: Chapter VII, Section 1 - Governance at Union level
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 68
+  title: Scientific panel of independent experts
+  group: Chapter VII, Section 1 - Governance at Union level
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 69
+  title: Access to the pool of experts by the Member States
+  group: Chapter VII, Section 1 - Governance at Union level
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 70
+  title: Designation of national competent authorities and single points of contact
+  group: Chapter VII, Section 2 - National competent authorities
+  state: out_of_scope
+  note: Sets up the Union and national bodies that run the Regulation. Binds authorities and conformity
+    assessment bodies, not the system Keel assesses.
+- ref: Art. 71
+  title: EU database for high-risk AI systems listed in Annex III
+  group: Chapter VIII - EU database for high-risk AI systems
+  state: out_of_scope
+  note: The EU database of registered high-risk systems, run by the Commission. Binds authorities and
+    conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 72
+  title: Post-market monitoring by providers and post-market monitoring plan for high-risk AI systems
+  group: Chapter IX, Section 1 - Post-market monitoring
+  state: out_of_scope
+  note: The post-market monitoring plan and system the provider runs after release. A process; Keel's
+    re-assessments can feed it, and the logs it relies on are mapped at Articles 12 and 19.
+- ref: Art. 73
+  title: Reporting of serious incidents
+  group: Chapter IX, Section 2 - Sharing of information on serious incidents
+  state: out_of_scope
+  note: Reporting serious incidents to authorities within set deadlines. A process duty of the provider
+    (73(1)), and of the deployer through Article 26(5), after the event.
+- ref: Art. 74
+  title: Market surveillance and control of AI systems in the Union market
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 75
+  title: Market surveillance and control of AI systems and mutual assistance
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 75a
+  title: Supervisory and enforcement powers of the AI Office
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 75b
+  title: Commitments
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 75c
+  title: Non-compliance, fines and periodic penalty payments
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 75d
+  title: Safeguards and further specification
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 76
+  title: Supervision of testing in real world conditions by market surveillance authorities
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 77
+  title: Powers of authorities protecting fundamental rights and cooperation with market surveillance
+    authorities
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 78
+  title: Confidentiality
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 79
+  title: Procedure at national level for dealing with AI systems presenting a risk
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 80
+  title: Procedure for dealing with AI systems classified by the provider as non-high-risk in application
+    of Annex III
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 81
+  title: Union safeguard procedure
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 82
+  title: Compliant AI systems which present a risk
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 83
+  title: Formal non-compliance
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 84
+  title: Union AI testing support structures
+  group: Chapter IX, Section 3 - Enforcement
+  state: out_of_scope
+  note: Powers and procedures of market surveillance authorities and the AI Office. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.
+- ref: Art. 85
+  title: Right to lodge a complaint with a market surveillance authority
+  group: Chapter IX, Section 4 - Remedies
+  state: out_of_scope
+  note: The right to complain to a market surveillance authority. A remedy for people, not a property
+    of the system.
+- ref: Art. 86
+  title: Right to explanation of individual decision-making
+  group: Chapter IX, Section 4 - Remedies
+  state: out_of_scope
+  note: An affected person's right to an explanation from the deployer of a decision based on a high-risk
+    system. A duty met by the deployer's process, not by the system's design.
+- ref: Art. 87
+  title: Reporting of infringements and protection of reporting persons
+  group: Chapter IX, Section 4 - Remedies
+  state: out_of_scope
+  note: Protection of people who report infringements. A remedy outside the system.
+- ref: Art. 88
+  title: Enforcement of the obligations of providers of general-purpose AI models
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 89
+  title: Monitoring actions
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 90
+  title: Alerts of systemic risks by the scientific panel
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 91
+  title: Power to request documentation and information
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 92
+  title: Power to conduct evaluations
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 93
+  title: Power to request measures
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 94
+  title: Procedural rights of economic operators of the general-purpose AI model
+  group: Chapter IX, Section 5 - Supervision, investigation, enforcement and monitoring in respect of
+    providers of general-purpose AI models
+  state: out_of_scope
+  note: Binds the provider of a general-purpose AI model, or the Commission acting on one. Keel assesses
+    systems built on such a model, not the model provider.
+- ref: Art. 95
+  title: Codes of conduct for voluntary application of specific requirements
+  group: Chapter X - Codes of conduct and guidelines
+  state: out_of_scope
+  note: Voluntary codes of conduct. They bind only those who sign up, and say nothing a deployed system
+    must do by law.
+- ref: Art. 96
+  title: Guidelines from the Commission on the implementation of this Regulation
+  group: Chapter X - Codes of conduct and guidelines
+  state: out_of_scope
+  note: Commission guidelines on applying the Regulation. Guidance, not a duty on a system.
+- ref: Art. 97
+  title: Exercise of the delegation
+  group: Chapter XI - Delegation of power and committee procedure
+  state: out_of_scope
+  note: How the Commission exercises its delegated powers. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 98
+  title: Committee procedure
+  group: Chapter XI - Delegation of power and committee procedure
+  state: out_of_scope
+  note: The committee that assists the Commission. Binds authorities and conformity assessment bodies,
+    not the system Keel assesses.
+- ref: Art. 99
+  title: Penalties
+  group: Chapter XII - Penalties
+  state: out_of_scope
+  note: Penalties Member States set for infringements. The consequence of a breach, not a requirement
+    of its own.
+- ref: Art. 100
+  title: Administrative fines on Union institutions, bodies, offices and agencies
+  group: Chapter XII - Penalties
+  state: out_of_scope
+  note: Fines on Union institutions, bodies, offices and agencies. The consequence of a breach.
+- ref: Art. 101
+  title: Fines for providers of general-purpose AI models
+  group: Chapter XII - Penalties
+  state: out_of_scope
+  note: Fines on providers of general-purpose AI models. Binds the provider of a general-purpose AI model,
+    or the Commission acting on one. Keel assesses systems built on such a model, not the model provider.
+- ref: Art. 102
+  title: Amendment to Regulation (EC) No 300/2008
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 103
+  title: Amendment to Regulation (EU) No 167/2013
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 104
+  title: Amendment to Regulation (EU) No 168/2013
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 105
+  title: Amendment to Directive 2014/90/EU
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 106
+  title: Amendment to Directive (EU) 2016/797
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 107
+  title: Amendment to Regulation (EU) 2018/858
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 108
+  title: Amendments to Regulation (EU) 2018/1139
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 109
+  title: Amendment to Regulation (EU) 2019/2144
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 110
+  title: Amendment to Directive (EU) 2020/1828
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Amends another Union act to refer to this Regulation; it places no duty on an AI system.
+- ref: Art. 111
+  title: AI systems already placed on the market or put into service and general-purpose AI models already
+    placed on the marked
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: When the Regulation applies to systems already on the market. A transitional rule about dates.
+- ref: Art. 112
+  title: Evaluation and review
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: The Commission's evaluation and review of the Regulation. Binds authorities and conformity assessment
+    bodies, not the system Keel assesses.
+- ref: Art. 113
+  title: Entry into force and application
+  group: Chapter XIII - Final provisions
+  state: out_of_scope
+  note: Entry into force and the dates from which each part applies. No duty on a system.
+- ref: Annex I
+  title: List of Union harmonisation legislation
+  group: Annexes
+  state: out_of_scope
+  note: The list of Union product legislation whose products can make an AI system high-risk. An input
+    to the legal classification in Article 6, which Keel does not make.
+- ref: Annex II
+  title: List of criminal offences referred to in Article 5(1), first subparagraph, point (h)(iii)
+  group: Annexes
+  state: out_of_scope
+  note: The list of criminal offences referred to in the prohibition on real-time remote biometric identification.
+    A legal reference, outside the library.
+- ref: Annex III
+  title: High-risk AI systems referred to in Article 6(2)
+  group: Annexes
+  state: out_of_scope
+  note: The list of high-risk uses. Whether a system falls in it is a legal classification Keel does not
+    make.
+- ref: Annex IV
+  title: Technical documentation referred to in Article 11(1)
+  group: Annexes
+  state: out_of_scope
+  note: What the provider's technical documentation must contain. A documentation template; a Keel report
+    can be part of what it cites.
+- ref: Annex V
+  title: EU declaration of conformity
+  group: Annexes
+  state: out_of_scope
+  note: The content of the EU declaration of conformity. A paper the provider signs.
+- ref: Annex VI
+  title: Conformity assessment procedure based on internal control
+  group: Annexes
+  state: out_of_scope
+  note: The conformity procedure based on internal control. A procedure the provider follows, not a property
+    of the system.
+- ref: Annex VII
+  title: Conformity based on an assessment of the quality management system and an assessment of the technical
+    documentation
+  group: Annexes
+  state: out_of_scope
+  note: The conformity procedure based on a notified body's assessment of the quality management system
+    and technical documentation. Binds authorities and conformity assessment bodies, not the system Keel
+    assesses.
+- ref: Annex VIII
+  title: Information to be submitted upon the registration of high-risk AI systems in accordance with
+    Article 49
+  group: Annexes
+  state: out_of_scope
+  note: What is submitted when a high-risk system is registered. Registration data, organisational.
+- ref: Annex IX
+  title: Information to be submitted upon the registration of high-risk AI systems listed in Annex III
+    in relation to testing in real world conditions in accordance with Article 60
+  group: Annexes
+  state: out_of_scope
+  note: What is submitted when a high-risk system tested in real-world conditions is registered. Registration
+    data, organisational.
+- ref: Annex X
+  title: Union legislative acts on large-scale IT systems in the area of Freedom, Security and Justice
+  group: Annexes
+  state: out_of_scope
+  note: Union acts on large-scale IT systems in freedom, security and justice, referred to in the transitional
+    rules. A legal reference.
+- ref: Annex XI
+  title: Technical documentation referred to in Article 53(1), point (a) — technical documentation for
+    providers of general-purpose AI models
+  group: Annexes
+  state: out_of_scope
+  note: The technical documentation a provider of a general-purpose AI model keeps. Binds the provider
+    of a general-purpose AI model, or the Commission acting on one. Keel assesses systems built on such
+    a model, not the model provider.
+- ref: Annex XII
+  title: Transparency information referred to in Article 53(1), point (b) — technical documentation for
+    providers of general-purpose AI models to downstream providers that integrate the model into their
+    AI system
+  group: Annexes
+  state: out_of_scope
+  note: The information a provider of a general-purpose AI model gives downstream providers. Binds the
+    provider of a general-purpose AI model, or the Commission acting on one. Keel assesses systems built
+    on such a model, not the model provider.
+- ref: Annex XIII
+  title: Criteria for the designation of general-purpose AI models with systemic risk referred to in Article
+    51
+  group: Annexes
+  state: out_of_scope
+  note: Criteria for designating a general-purpose AI model as having systemic risk. Binds the provider
+    of a general-purpose AI model, or the Commission acting on one. Keel assesses systems built on such
+    a model, not the model provider.
+- ref: Annex XIV
+  title: The list of codes, categories and corresponding types of AI systems for the purpose of the notification
+    procedure referred to in Article 30 specifying the scope of the designation as notified bodies
+  group: Annexes
+  state: out_of_scope
+  note: The codes and categories that define the scope of a notified body's designation. Binds authorities
+    and conformity assessment bodies, not the system Keel assesses.

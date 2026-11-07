@@ -236,3 +236,51 @@ def test_a_source_must_say_what_kind_it_is():
     with pytest.raises(ValidationError):
         CoverageSource(**base, kind="law")
     assert CoverageSource(**base, kind="regulation").kind == "regulation"
+
+
+# --------------------------------------------------------------------------- #
+# A regulation is mapped in full
+# --------------------------------------------------------------------------- #
+def test_a_regulation_mapped_in_part_does_not_validate(coverage):
+    """Compliance with a law reads as compliance with all of it. When an amendment adds
+    articles and the rows stay as they were, the catalog must stop validating rather than
+    show the old count as complete."""
+    d = coverage([{"ref": "Art. 1", "title": "One", "state": "covered", "threats": ["T-A"]}],
+                 source={"kind": "regulation", "entry_count": 2})
+    errs = validate_catalog(d)
+    assert any("1 of 2" in e for e in errs), errs
+    assert "partial_import" not in {f["code"] for f in catalog_findings(d)}
+
+
+def test_a_regulation_mapped_in_full_validates(coverage):
+    d = coverage([{"ref": "Art. 1", "title": "One", "state": "covered", "threats": ["T-A"]},
+                  {"ref": "Art. 2", "title": "Two", "state": "out_of_scope", "note": "Binds the authority."}],
+                 source={"kind": "regulation", "entry_count": 2})
+    assert validate_catalog(d) == []
+
+
+def test_a_best_practice_list_may_stay_partial(coverage):
+    d = coverage([{"ref": "X1", "title": "One", "state": "gap"}], source={"entry_count": 9})
+    assert validate_catalog(d) == []
+    assert "partial_import" in {f["code"] for f in catalog_findings(d)}
+
+
+def test_a_covered_row_may_say_which_parts_fall_outside(coverage):
+    """Which paragraphs Keel cannot reach is a fact about the source's entry, not about
+    the ids answering it, so unlike a note it stays true when another id joins."""
+    d = coverage([{"ref": "X1", "title": "One", "state": "covered", "threats": ["T-A"],
+                   "outside": "X1(3): an organisational duty."}])
+    assert validate_catalog(d) == []
+
+
+def test_an_out_of_scope_row_takes_no_outside(coverage):
+    d = coverage([{"ref": "X1", "title": "One", "state": "out_of_scope", "note": "Not ours.",
+                   "outside": "X1(2)."}])
+    assert any("takes no `outside`" in e for e in validate_catalog(d))
+
+
+def test_outside_survives_a_change_of_ids(coverage):
+    coverage([{"ref": "X1", "title": "One", "state": "covered", "threats": ["T-A"],
+               "outside": "X1(3): organisational."}])
+    out = coverage_service.set_entry("demo-source", "X1", "covered", mitigations=["CTRL-A"])
+    assert out["entry"]["outside"] == "X1(3): organisational."

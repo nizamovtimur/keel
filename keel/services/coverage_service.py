@@ -223,6 +223,8 @@ def set_entry(
             threats=threats or [],
             mitigations=mitigations or [],
             note=note if note is not None else (existing.note if state == existing.state else None),
+            # About the source's entry, not the ids, so it survives a change of ids.
+            outside=None if state == "out_of_scope" else existing.outside,
         )
     except ValidationError as e:
         raise invalid_from_pydantic(e, hint="see get_coverage for what each state means") from e

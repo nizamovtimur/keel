@@ -298,10 +298,30 @@ def _partial_import(_id: str, _rec: dict[str, Any], cat: Catalog) -> Iterable[Fi
     Saying "12 of 101" is the difference between a claim and a boast."""
     for doc in cat.coverage:
         got, want = len(doc.entries), doc.source.entry_count
-        if got != want:
+        if got != want and not _binding(doc):
             yield Finding("partial_import", "advice", "coverage", doc.source.id,
                           f"{doc.source.title} {doc.source.version}: {got} of {want} "
                           f"entries imported")
+
+
+def _binding(doc) -> bool:
+    return doc.source.kind in ("regulation", "standard")
+
+
+@rule("unfinished_regulation", entity="catalog", severity="error",
+      label="Regulation or standard mapped in part")
+def _unfinished_regulation(_id: str, _rec: dict[str, Any], cat: Catalog) -> Iterable[Finding]:
+    """Compliance against a law is read as compliance with all of it, so a regulation or
+    standard carries a row for every entry of its release. When an amendment adds articles
+    and nobody maps them, the catalog stops validating instead of going quietly stale. A
+    threat list may stay partial; there the gap is only advice."""
+    for doc in cat.coverage:
+        got, want = len(doc.entries), doc.source.entry_count
+        if _binding(doc) and got != want:
+            yield Finding("unfinished_regulation", "error", "coverage", doc.source.id,
+                          f"{doc.source.title} {doc.source.version}: {got} of {want} "
+                          f"entries mapped; a {doc.source.kind} is mapped in full, so map "
+                          f"the rest (state out_of_scope with a note where Keel stops)")
 
 
 @rule("nothing_answered", entity="catalog", severity="advice", label="Source nothing answers")
