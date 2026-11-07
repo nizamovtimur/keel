@@ -26,14 +26,18 @@ A complete threat with its trail and final row: [references/worked-example.md](r
 The assessment is built only on facts about the system established from the context. The context is never assumed to be complete. At any step, if a claim needs a fact that is not in the context:
 
 1. Do not fill it in with an assumption.
-2. Stop the analysis at that exact point and request the missing fact from the task-giver before continuing that branch.
-3. Once you have the fact, continue from that point.
+2. Look for it yourself first, in what you can reach: the code, the configuration, the logs, and in an unclear case a test you can run. A fact you could have read is not a question.
+3. If you know where the fact is and lack the access or the document, ask for that access or that document.
+4. Otherwise stop the analysis at that exact point and ask the task-giver for the fact. Wait for the answer before continuing that branch.
+5. Once you have the fact, continue from that point.
 
 If several missing facts are visible at that moment, ask them together, but the pause stays tied to the point where they were needed.
 
-A missing fact pauses only what depends on it. Carry every threat, measure and verdict that the established facts already decide through to the end in the same answer, and mark each paused branch with the fact it waits for. Violation: stopping the whole assessment at step 1 when the facts given already decide part of it.
+A missing fact pauses only what depends on it. Carry every threat, measure and verdict that the established facts already decide through to the end in the same answer, and mark each paused branch with the fact it waits for. A paused branch gets no grade, no discard and no measure until its answer comes, and the assessment is not finished while any branch is paused. Violations: stopping the whole assessment at step 1 when the facts given already decide part of it; writing a branch down "for now" and grading it to be corrected later.
 
-If there is no one to answer (a non-interactive run), stop the assessment and return an explicit "Insufficient data to complete: …" block listing the missing facts, instead of analysis on assumptions.
+A branch depends on a fact when it cannot be decided without it: whether the source can reach the surface at all, whether the action or the asset exists. A compensating control or a refutation that is not verified does not pause the grade, because step 9 counts no unverified control anyway: grade the risk from the established facts with that control uncounted, ask for the fact, and say what the grade becomes if the control holds. Such a grade is not provisional, it is the grade of the system as established; a new fact changes it, as any new fact would. Violation: withholding a grade that the given facts decide, for example the likelihood of injection through an inbox anyone can write to, while waiting to hear whether some control exists.
+
+If you run under another agent (a subagent in a larger run), return the open questions to it and wait for the answers instead of finishing the paused branches. If there is no one at all to answer, stop and return an explicit "Insufficient data to complete: …" block listing the missing facts, instead of analysis on assumptions.
 
 ## Cross-cutting rule
 
@@ -77,7 +81,7 @@ Copy this checklist into the trail and tick it as you go:
 
 8. **Harm.** Who loses what, and how much? A leaked dataset, a substituted decision or a disrupted process is the outcome inside the system; the harm is what that outcome costs someone: money, legal and regulatory exposure, reputation, safety. Name both, and stop only at the loss. A chain that does not reach harm is not a threat. Violation: stopping at "the data leaks", which is the outcome, not the harm.
 
-9. **Risk.** How likely × how severe? Possibility is not probability: weigh the specific attack path in this architecture, the source's access from step 3, and the compensating controls, counting a control only if it is verified on this system (a model-based measure counts only as a layer credited at step 11). Token interception in internal infrastructure and a request-replay attack are one "possible" vulnerability with very different probabilities of realization. Check external conditions that may reduce the threat to zero (network isolation, no reachable surface, hardware limits); if unknown or unverified, that is a gap under the data-sufficiency gate, not a reason to skip the threat. Check assumptions: what must be true for the scenario to materialize? Seek refutations, not confirmations, and verify the chain through to harm. Violation: finalizing a threat without checking which external conditions already compensate for it.
+9. **Risk.** How likely × how severe? Possibility is not probability: weigh the specific attack path in this architecture, the source's access from step 3, and the compensating controls, counting a control only if it is verified on this system (a model-based measure counts only as a layer credited at step 11). Token interception in internal infrastructure and a request-replay attack are one "possible" vulnerability with very different probabilities of realization. Check external conditions that may reduce the threat to zero (network isolation, no reachable surface, hardware limits); if unknown or unverified, that is a gap under the data-sufficiency gate, not a reason to skip the threat: a condition that decides whether the surface is reachable at all pauses the branch, and any other unverified control stays uncounted in a grade you give now. Check assumptions: what must be true for the scenario to materialize? Seek refutations, not confirmations, and verify the chain through to harm. Violation: finalizing a threat without checking which external conditions already compensate for it.
 
 10. **Delta.** Did the threat exist before the integration? If so, state what exactly the integration changed in the chain fields, in MITRE ATLAS terminology (attack stages and tactics as a language, not technique numbers); if the threat is new, describe it in full in these terms; if there is no delta, the threat belongs to the existing model and is not an argument against the integration. Violation: counting a threat against the integration without showing what it changed in the chain and how that reads in MITRE terms.
 
@@ -91,7 +95,7 @@ Check the trail against each line; fix what fails and check again until every li
 
 - every threat is a scenario that reaches harm, not a capability or a change;
 - every chain field rests on a fact from step 1, or the missing fact was asked for;
-- every branch the established facts decide is finished, and each paused branch names the fact it waits for;
+- every branch the established facts decide is finished and graded, each paused branch names the fact without which it cannot be decided and carries no grade, no grade is withheld only because a control is unverified, and every question was asked only after looking for the fact yourself;
 - every source of harm is named; an attacker with who, access and goal, a source without an attacker with what triggers it and with which permissions it acts;
 - every compensating control counted at step 9 is verified on this system;
 - every measure has its bypass priced, and every model-based measure has a recorded credit or zero credit;

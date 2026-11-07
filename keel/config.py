@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     # offers an "Edit on GitHub" link on save. Env var: REPO_URL. Empty = link hidden.
     repo_url: str = ""
 
+    # Hosts an evidence permalink in a report may point to (env var: EVIDENCE_HOSTS, a
+    # JSON list, e.g. ["github.com", "git.example.internal"]). An evidence link is model
+    # output: a planted address can carry data in its query or lead to a lookalike page.
+    # So a link to any other host is refused on save, and the default is no host at all:
+    # an organisation names where its code lives. Evidence without a link still works -
+    # commit, path, lines and the quote are what it rests on.
+    evidence_hosts: list[str] = []
+
     # Optional override for the catalog directory (env var: CATALOG_DIR). Point it at a
     # throwaway copy to click through the UI without touching the real catalog. Empty =
     # the repo's own catalog/.

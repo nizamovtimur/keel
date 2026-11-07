@@ -887,6 +887,24 @@
     font-size: var(--fs-11); color: var(--navy-500); margin-top: 2px; }
   .req-note { margin: 4px 0 0 24px; color: var(--navy-500); font-size: var(--fs-13); font-style: italic;
     line-height: var(--lh-base); max-width: var(--measure); }
+  .fev { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; margin-top: 10px; font-size: var(--fs-12); }
+  .fev .k { color: var(--navy-500); text-transform: uppercase; letter-spacing: var(--ls-key); font-weight: 600; margin-right: 4px; }
+  .ev-chip { font-family: ui-monospace, "SFMono-Regular", monospace; font-size: var(--fs-12); color: var(--navy-700);
+    background: var(--navy-100); border: 1px solid var(--navy-200); border-radius: 4px; padding: 1px 6px; text-decoration: none; }
+  .ev-chip.ev-missing { color: var(--crimson-700); border-color: currentColor; }
+  .ev-entry { scroll-margin-top: 80px; }
+  .ev-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: var(--fs-13); }
+  .ev-id { font-weight: 700; font-family: ui-monospace, "SFMono-Regular", monospace; }
+  .ev-commit { color: var(--navy-500); font-size: var(--fs-12); }
+  .ev-quote { margin: 8px 0 0; padding: 8px 10px; background: var(--navy-100); border-radius: 4px;
+    font-size: var(--fs-12); white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; }
+  .ev-link { margin-top: 6px; font-size: var(--fs-12); word-break: break-all; }
+  .ev-host { font-weight: 700; margin-right: 6px; }
+  .rep-qa .oq-id { margin-right: 8px; }
+  .oq-row { display: flex; gap: 8px; font-size: var(--fs-13); margin-top: 4px; }
+  .oq-row .k { min-width: 80px; color: var(--navy-500); }
+  .oq.waiting { border-left: 3px solid var(--amber); }
+  .oq-none { color: var(--crimson-700); font-weight: 600; }
   .req-ignored { margin-top: 9px; color: var(--navy-500); font-size: var(--fs-13); font-style: italic;
     line-height: var(--lh-base); max-width: var(--measure); }
   .rep-qa { margin-top: 6px; font-size: var(--fs-14); line-height: var(--lh-prose); color: var(--navy-700); max-width: var(--measure); }
@@ -1182,7 +1200,11 @@ async function api(method, url, body) {
   const r = await fetch(API + url, opt);
   const txt = await r.text();
   const data = txt ? JSON.parse(txt) : {};
-  if (!r.ok) throw new Error(data.error || data.detail || (method + " " + url + " → " + r.status));
+  if (!r.ok) {
+    const err = new Error(data.error || data.detail || (method + " " + url + " → " + r.status));
+    err.data = data;   // details name each thing that failed; a caller may show them
+    throw err;
+  }
   return data;
 }
 const j = url => api("GET", url);
@@ -3124,6 +3146,13 @@ function wireJumpLinks(root) {
     b.onclick = () => jumpToThreat(b.dataset.jumpThreat));
   root.querySelectorAll("[data-jump-mit]").forEach(b =>
     b.onclick = () => jumpToMit(b.dataset.jumpMit));
+  // An evidence marker scrolls to its addendum entry. The app routes on the hash, so
+  // the href is only a fallback and must not be followed.
+  root.querySelectorAll("[data-ev]").forEach(a => a.onclick = ev => {
+    ev.preventDefault();
+    const t = document.getElementById(`ev-${a.dataset.ev}`);
+    if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 }
 
 // Act on a file the loader rejected. A record that still loaded (one bad link, the rest
@@ -3612,10 +3641,22 @@ function reportFindingHtml(f, fi) {
       : `<input type="checkbox" ${r.included ? "checked" : ""} disabled>`;
     return `<div class="req-row"><label>${box}<span>${esc(label)} ${statusBadge}</span></label></div>`
       + ((idLink || owner) ? `<div class="req-meta" style="margin-left:24px">${idLink}${owner}</div>` : "")
-      + (r.coverage_note ? `<div class="req-note">${esc(r.coverage_note)}</div>` : "");
+      + (r.coverage_note ? `<div class="req-note">${esc(r.coverage_note)}</div>` : "")
+      + reqBuildHtml(r, `findings.${fi}.requirements.${ri}`);
   }).join("");
   const ignored = (f.ignored_mitigations || []).map(im =>
     `<div class="req-ignored">Not applied: <button type="button" class="reflink" data-jump-mit="${esc(im.mitigation_id)}">${esc(im.mitigation_id)}</button> — ${esc(im.reason)}</div>`).join("");
+  const rep0 = state.currentReport || {};
+  const sameCause = f.root_cause
+    ? (rep0.findings || []).filter(o => o !== f && o.root_cause === f.root_cause).map(o => o.id) : [];
+  const reproduced = (f.evidence || []).some(id =>
+    ((rep0.evidence || []).find(e => e.id === id) || {}).kind === "test");
+  // A high rests on someone who did not raise it trying to break it.
+  const review = f.review
+    ? `<div class="fwhy"><span class="k">Refutation tried</span>${esc(f.review.by)}: ${esc(f.review.verdict)}. ${esc(f.review.note)}</div>`
+    : (f.risk.severity === "high"
+      ? '<div class="fwhy"><span class="k">Refutation tried</span><span class="rep-empty">not yet: a high needs someone who did not raise it to try to break it</span></div>'
+      : "");
   // Severity and likelihood are grades, so they carry the weight ramp. Harm, surface and
   // exploitation cost are facts ABOUT the finding, not grades of it — neutral badges, so
   // nothing on the card competes with the ranking. They also read without being named,
@@ -3623,10 +3664,23 @@ function reportFindingHtml(f, fi) {
   const fact = (path, value, options) => reportEditable()
     ? `<span class="badge type">${rSelect(path, value, options, "ie")}</span>`
     : `<span class="badge type">${esc(value)}</span>`;
+  // A weakness with no channel (a standing credential) has no surface; saying so beats
+  // a select that would force one the path never crosses.
   const facts = fact(`findings.${fi}.harm`, f.harm, harmEnum())
-    + fact(`findings.${fi}.attack_surface`, f.attack_surface, surfaceEnum())
+    + (f.attack_surface
+      ? fact(`findings.${fi}.attack_surface`, f.attack_surface, surfaceEnum())
+      : `<span class="badge type">no surface</span>`)
     + `<span class="badge type">exploitation ${rSelect(`findings.${fi}.exploitation_complexity`,
-        f.exploitation_complexity, REPORT_LEVELS, "ie")}</span>`;
+        f.exploitation_complexity, REPORT_LEVELS, "ie")}</span>`
+    // What is switched on today, apart from the grade: the grade is the design as it runs.
+    + (f.deployment ? `<span class="badge soft">deployment: ${esc(f.deployment.replace("_", " "))}</span>` : "")
+    // One cause, one fix: the cause is shown, and so are the other findings it closes.
+    + (f.root_cause ? `<span class="badge type" title="root cause">cause: ${esc(f.root_cause)}</span>` : "")
+    + (sameCause.length ? `<span class="badge soft">same cause as ${esc(sameCause.join(", "))}</span>` : "")
+    // A finding whose path was run, not only read, says so.
+    + (reproduced ? `<span class="badge soft">reproduced</span>` : "");
+  // The proof is in the addendum; the card carries one marker per entry, pointing there.
+  const evChips = (f.evidence || []).map(id => evidenceChip(id)).join("");
   const grade = (kind, path, level, quiet) => {
     const inner = reportEditable()
       ? `<select class="ie-grade" data-rp="${esc(path)}" data-grade="${kind}">${REPORT_LEVELS.map(o =>
@@ -3658,6 +3712,7 @@ function reportFindingHtml(f, fi) {
       <span class="grades">
         ${grade("severity", `findings.${fi}.risk.severity`, f.risk.severity)}
         ${grade("likelihood", `findings.${fi}.risk.likelihood`, f.risk.likelihood, true)}
+        ${f.risk_today ? `<span class="sev quiet sev-${esc(f.risk_today.severity)}" title="${esc(f.risk_today.reasoning)}"><span class="p">today</span>${esc(f.risk_today.severity)} × ${esc(f.risk_today.likelihood)}</span>` : ""}
         ${reportEditable() ? `<button type="button" class="fdrop" data-drop-finding="${fi}" title="Remove this finding">&times;</button>` : ""}
       </span>
     </div>
@@ -3665,9 +3720,101 @@ function reportFindingHtml(f, fi) {
     <div class="fwhy"><span class="k">Why these grades</span>${rProse(`findings.${fi}.risk.reasoning`,
       f.risk.reasoning, "", "A full sentence — this label is not carried into the hand-off")}</div>
     ${chain ? `<dl class="fchain">${chain}</dl>` : ""}
+    ${review}
     <div class="badges">${facts}</div>
+    <div class="fev"><span class="k">Evidence</span>${evChips || '<span class="rep-empty">none: this grade rests on nothing checked</span>'}</div>
     ${(reqs || ignored) ? `<div class="freqs"><span class="freqs-k">Requirements</span>${reqs}${ignored}</div>` : ""}
   </div>`;
+}
+
+// What a shipped requirement must say so a team can build and accept it. Shown when
+// recorded, and as empty slots while the report is editable.
+function reqBuildHtml(r, path) {
+  const rows = [["Must hold", "invariant"], ["Enforced at", "enforce_at"], ["Done when", "done_check"]]
+    .filter(([, k]) => reportEditable() || (r[k] || "").trim())
+    .map(([label, k]) => `<dt>${label}</dt><dd>${rProse(`${path}.${k}`, r[k], "")}</dd>`).join("");
+  return rows ? `<dl class="fchain" style="margin-left:24px">${rows}</dl>` : "";
+}
+
+// The ledger: every place something reaches the system, and what became of it. A row
+// with no outcome and no note is a surface nobody walked.
+function ledgerHtml(rep) {
+  const rows = rep.surfaces || [];
+  if (!rows.length) return '<p class="placeholder">No surface ledger. The report cannot be finalized until every entry point, tool and data path is listed.</p>';
+  return rows.map(s => {
+    const walked = (s.outcome || []).length || (s.note || "").trim();
+    const out = (s.outcome || []).map(id => `<button type="button" class="reflink" data-jump-threat="${esc(id)}">${esc(id)}</button>`).join(" ");
+    return `<div class="req-ignored"><span class="meta oq-id">${esc(s.id)}</span>
+      <span class="badge soft">${esc(s.kind)}</span> ${esc(s.name)} <code>${esc(s.where)}</code>
+      ${s.found_by === "review" ? '<span class="badge soft">found in review</span>' : ""}
+      ${(s.evidence || []).map(id => evidenceChip(id)).join(" ")}
+      <div class="req-note">${out ? out : ""}${(s.note || "").trim() ? ` ${esc(s.note)}` : ""}${walked ? "" : '<span class="oq-none">not walked</span>'}</div></div>`;
+  }).join("");
+}
+
+function refutedHtml(rep) {
+  const rows = rep.refuted || [];
+  if (!rows.length) return '<p class="placeholder">Nothing refuted.</p>';
+  return rows.map(r => `<div class="req-ignored">
+      <button type="button" class="reflink" data-jump-threat="${esc(r.id)}">${esc(r.id)}</button>
+      ${r.root_cause ? `<span class="badge type">cause: ${esc(r.root_cause)}</span>` : ""} — ${esc(r.reason)}
+      ${(r.evidence || []).map(id => evidenceChip(id)).join(" ")}</div>`).join("");
+}
+
+// One marker per evidence entry, pointing at the addendum below the findings. The
+// marker never leads off the page: the outside address, if there is one, is shown in
+// full in the addendum, so the reader sees where a link goes before following it.
+function evidenceChip(id) {
+  const e = ((state.currentReport || {}).evidence || []).find(x => x.id === id);
+  const where = e ? (e.kind === "read" ? `${e.path}:${e.lines}` : e.kind) : "missing";
+  return `<a class="ev-chip${e ? "" : " ev-missing"}" href="#ev-${esc(id)}" data-ev="${esc(id)}"
+    title="${esc(where)}">[${esc(id)}] ${esc(where)}</a>`;
+}
+
+// The addendum. A link is model output, so it is shown as text with its host first, is
+// never fetched or previewed, and opens with no referrer. The quote is what the entry
+// rests on; the link is a convenience for whoever has access.
+function evidenceHtml(rep) {
+  const ev = rep.evidence || [];
+  if (!ev.length) return '<p class="placeholder">No evidence recorded. A graded finding needs at least one entry before the report can be finalized.</p>';
+  return ev.map(e => {
+    let link = "";
+    if (e.url) {
+      let host = "";
+      try { host = new URL(e.url).host; } catch (_) { host = "unreadable address"; }
+      link = `<div class="ev-link"><span class="ev-host">${esc(host)}</span>
+        <a href="${esc(e.url)}" target="_blank" rel="noopener noreferrer nofollow" referrerpolicy="no-referrer">${esc(e.url)}</a></div>`;
+    }
+    const where = e.kind === "read"
+      ? `${esc(e.path)}:${esc(e.lines)} <span class="ev-commit">at ${esc((e.commit || "").slice(0, 12))}</span>`
+      : `<code>${esc(e.command || "")}</code>`;
+    return `<div class="card ev-entry" id="ev-${esc(e.id)}">
+      <div class="ev-head"><span class="ev-id">[${esc(e.id)}]</span><span class="badge soft">${esc(e.kind)}</span>${where}</div>
+      <pre class="ev-quote">${esc(e.quote)}</pre>${link}</div>`;
+  }).join("");
+}
+
+// What the assessment has not established yet. It sits above the findings because it
+// is what stands between this draft and a finished report: nothing here is "for later".
+function openHtml(rep) {
+  const qs = rep.open_questions || [];
+  const paused = rep.paused || [];
+  if (!qs.length && !paused.length) return "";
+  const qHtml = qs.map(q => `<div class="card oq ${(q.answer || "").trim() ? "answered" : "waiting"}">
+      <div class="rep-qa"><span class="meta oq-id">${esc(q.id)}</span>${esc(q.question)}
+        ${q.asks_for === "access" ? '<span class="badge soft">needs access</span>' : ""}</div>
+      <div class="oq-row"><span class="k">Looked in</span>${esc(q.looked_in)}</div>
+      <div class="oq-row"><span class="k">Waiting</span>${esc(q.needed_for)}</div>
+      ${(q.how_to_check || "").trim() ? `<div class="oq-row"><span class="k">How to check</span>${esc(q.how_to_check)}</div>` : ""}
+      <div class="oq-row"><span class="k">Answer</span>${(q.answer || "").trim() ? esc(q.answer) : '<span class="oq-none">not answered</span>'}</div>
+    </div>`).join("");
+  const pHtml = paused.map(p => `<div class="req-ignored">
+      <button type="button" class="reflink" data-jump-threat="${esc(p.id)}">${esc(p.id)}</button>
+      waits on ${esc(p.waiting_on.join(", "))}: ${esc(p.note)}</div>`).join("");
+  const waiting = qs.filter(q => !(q.answer || "").trim()).length;
+  return readsec("Not established yet", qHtml
+      + (pHtml ? `<div class="ov-block"><p class="k">Paused branches<span class="n">no grade until answered</span></p>${pHtml}</div>` : ""),
+    `— ${waiting} of ${qs.length} questions without an answer`);
 }
 
 function reportDetailHtml(rep) {
@@ -3694,7 +3841,8 @@ function reportDetailHtml(rep) {
   // A ruled-out candidate names a catalog threat, so it links like anything else does.
   const discarded = (rep.discarded || []).length
     ? rep.discarded.map(d => `<div class="req-ignored">
-        <button type="button" class="reflink" data-jump-threat="${esc(d.id)}">${esc(d.id)}</button> — ${esc(d.reason)}</div>`).join("")
+        <button type="button" class="reflink" data-jump-threat="${esc(d.id)}">${esc(d.id)}</button> — ${esc(d.reason)}
+        ${(d.evidence || []).map(id => evidenceChip(id)).join(" ")}</div>`).join("")
     : '<p class="placeholder">Nothing ruled out.</p>';
 
   // How the run went, kept to improve the ASSESSOR rather than to describe the system.
@@ -3735,6 +3883,7 @@ function reportDetailHtml(rep) {
       <div class="fold-body">${body}</div>
     </details></section>`;
 
+  const unwalked = (rep.surfaces || []).filter(s => !(s.outcome || []).length && !(s.note || "").trim()).length;
   const draft = rep.status === "draft";
   // One verb. There used to be three — save, correct, reopen — and between them they
   // asked the reader to classify their own edit before making it, which nobody wants to
@@ -3772,11 +3921,15 @@ function reportDetailHtml(rep) {
       <div class="ov-block"><p class="k">What changed since the last assessment</p>
         ${rProse("delta_summary", rep.delta_summary, "prose")}</div>
     </section>
+    ${openHtml(rep)}
     ${readsec("Findings", findingsHtml
       + '<button class="btn ghost" id="addFinding" style="margin-top:10px">Add a finding</button>',
       `— ${findings.length}, worst first`)}
+    ${readsec("Evidence", evidenceHtml(rep), `— ${(rep.evidence || []).length}, what the findings rest on`)}
     <div class="rep-aside">
+      ${fold("surfaces", "Surfaces walked", `${(rep.surfaces || []).length}${unwalked ? `, ${unwalked} not walked` : ""}`, ledgerHtml(rep))}
       ${fold("discarded", "Ruled out", (rep.discarded || []).length, discarded)}
+      ${fold("refuted", "Refuted", (rep.refuted || []).length, refutedHtml(rep))}
       ${fold("meta", "How this assessment ran", metaCount, runMeta)}
     </div>`}
   </div>`;
@@ -3871,7 +4024,10 @@ function buildReportMarkdown(rep, mitInfo, s) {
     const label = info ? info.name : (r.description || r.mitigation_id);
     const owner = s.owner && info && info.owner ? ` (owner: ${info.owner})` : "";
     const note = r.coverage_status === "already_covered" ? " — already in place in this system" : "";
-    return `- ${label}${owner}${note}`;
+    const build = [["Must hold", r.invariant], ["Enforced at", r.enforce_at], ["Done when", r.done_check]]
+      .filter(([, v]) => (v || "").trim()).map(([k, v]) => `
+  - ${k}: ${v}`).join("");
+    return `- ${label}${owner}${note}${build}`;
   };
 
   let any = false;
@@ -3906,6 +4062,14 @@ function buildReportMarkdown(rep, mitInfo, s) {
   if (s.discarded && (rep.discarded || []).length) {
     lines.push("## Ruled out", "");
     lines.push(...rep.discarded.map(d => `- ${d.id} — ${d.reason}`), "");
+  }
+  // The prose carries [n] markers, so the text that carries them carries their key too.
+  if ((s.scenario || s.reasoning) && (rep.evidence || []).length) {
+    lines.push("## Evidence", "");
+    lines.push(...rep.evidence.map(e => {
+      const where = e.kind === "read" ? `${e.path}:${e.lines} at ${(e.commit || "").slice(0, 12)}` : `${e.kind}: ${e.command}`;
+      return `- [${e.id}] ${where}${e.url ? ` — ${e.url}` : ""}`;
+    }), "");
   }
   return lines.join("\n").trimEnd();
 }
@@ -4072,7 +4236,12 @@ async function finalizeReport() {
       `/reports/${encodeURIComponent(sel.system_id)}/${encodeURIComponent(sel.date)}/finalize`);
     state.reportSeries[sel.system_id] = null;   // its status changed
     toast("Report finalized");
-  } catch (e) { toast(e.message, true); return; }
+  } catch (e) {
+    // Refused because something is not established yet: say what, not just that.
+    const items = ((e.data || {}).details || []).map(d => d.message);
+    toast(items.length ? `${e.message}: ${items.join("; ")}` : e.message, true);
+    return;
+  }
   await openReportSystem(sel.system_id, sel.date);
 }
 
