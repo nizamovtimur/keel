@@ -51,22 +51,27 @@ def _with_advice(result: dict[str, Any], entity_type: str, entity_id: str) -> di
 
 
 @register_tool(annotations=_RO)
-async def list_threats(brief: bool = True, include: list[str] | None = None) -> dict:
+async def list_threats(brief: bool = True, include: list[str] | None = None,
+                       ids: list[str] | None = None) -> dict:
     """Lists threats. Returns {threats: [...], count}.
 
     brief=True (the default) returns id and title only — enough to pick one. Ask for more
-    with include, naming any of: harm, source, weaknesses, reachability,
-    mitigations, references, tags. Fetching a whole catalog of full records to read two
-    titles is the expensive mistake this guards against."""
-    return await _list_threats(brief=brief, include=include)
+    with brief=False and include, naming any of: harm, source, weaknesses, reachability,
+    mitigations, references, positioning, tags. ids limits the answer to those threats.
+
+    During an assessment read the threats you need in one call: brief=False, ids=[...],
+    include=["harm", "weaknesses", "reachability", "mitigations"] — half the size of
+    get_threat. Fetching a whole catalog of full records to read two titles is the
+    expensive mistake this guards against."""
+    return await _list_threats(brief=brief, include=include, ids=ids)
 
 
 @register_tool(annotations=_RO)
 async def get_threat(threat_id: str) -> dict:
     """Gets one threat in full: harm, source, weaknesses, reachability, linked
-    mitigations, references, tags, plus `cited_by` — the entries in the tracked sources
-    (OWASP, ATLAS, SAIF) that name this threat. An empty `cited_by` is not a defect; it
-    means no source Keel tracks has this, so the entry is Keel's own."""
+    mitigations, references, positioning, tags, plus `cited_by` — the entries in the
+    tracked sources (OWASP, ATLAS, SAIF) that name this threat. An empty `cited_by` is not
+    a defect; it means no source Keel tracks has this, so the entry is Keel's own. For catalog work."""
     return await _get_threat(threat_id)
 
 

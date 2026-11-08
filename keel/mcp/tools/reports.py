@@ -76,8 +76,8 @@ async def save_report(system_id: str, date: str, report: dict[str, Any]) -> dict
     """Writes an assessment. Returns {success, system_id, date, reverted_to_draft}.
 
     `report` is the whole document, not a patch — read it with get_report, change what
-    you mean to change, and send it back. system_id and date cannot be moved by a save,
-    because the path is the report's identity.
+    you mean to change, and send it back. For a few items use update_report. system_id and date cannot be moved by a
+    save, because the path is the report's identity.
 
     Editing is always allowed, including on a report already finalised; that one simply
     returns to draft, because a document that changed after sign-off is not signed off.
@@ -100,7 +100,27 @@ async def save_report(system_id: str, date: str, report: dict[str, Any]) -> dict
     done_check, and a missing or unwalked surface ledger. While it is non-empty the
     assessment is not done: get the answers (from whoever started you, if you run as a
     subagent) and continue; do not hand back a link as if it were finished."""
-    result = report_service.save_report(system_id, date, report)
+    return _saved(system_id, date, report_service.save_report(system_id, date, report))
+
+
+@register_tool(annotations=_WRITE)
+async def update_report(
+    system_id: str, date: str, changes: dict[str, Any] | None = None,
+    remove: dict[str, list[Any]] | None = None,
+) -> dict:
+    """Changes part of an assessment; returns what save_report returns, `open` included.
+    Prefer it to save_report while writing: reprinting the whole report each pass is the
+    costliest output of a run.
+
+    `changes` holds only what you add or change. In findings, paused, discarded,
+    surfaces, open_questions and evidence an item replaces the one with the same id or is
+    appended; any other field is replaced whole. `remove` drops items by id:
+    {"open_questions": ["Q3"]}. Same checks as save_report; a refused update changes
+    nothing."""
+    return _saved(system_id, date, report_service.update_report(system_id, date, changes, remove))
+
+
+def _saved(system_id: str, date: str, result: dict[str, Any]) -> dict:
     if not result["success"]:
         return {"success": False, "error": result["error"],
                 **({"errors": result["errors"]} if "errors" in result else {})}

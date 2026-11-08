@@ -684,6 +684,47 @@ def save_report(system_id: str, date: str, data: dict[str, Any]) -> dict[str, An
     }
 
 
+# The report's lists whose items carry an `id`. A change to one of them merges by id; any
+# other top-level field is replaced as a whole.
+LIST_SECTIONS = ("findings", "paused", "discarded", "surfaces", "open_questions", "evidence")
+
+
+def update_report(system_id: str, date: str, changes: dict[str, Any] | None = None,
+                  remove: dict[str, list[Any]] | None = None) -> dict[str, Any]:
+    """Change part of a report and save it through the same checks as save_report.
+
+    An assessment is written in passes: a finding, then its evidence, then an answer. Sending
+    the whole document back each time made the agent reprint everything it had already
+    written, and output is the most expensive token there is. Here an item in a list section
+    replaces the item with the same id or is appended; `remove` drops items by id.
+    """
+    data = get_report(system_id, date)["report"]
+    for key, value in (changes or {}).items():
+        if key not in LIST_SECTIONS:
+            data[key] = value
+            continue
+        if not isinstance(value, list) or not all(isinstance(i, dict) and "id" in i for i in value):
+            raise Invalid(
+                f"{key} must be a list of items that each carry an id",
+                hint=f"send only the {key} items you add or change, each with its id",
+            )
+        items = {item["id"]: item for item in data.get(key) or []}
+        for item in value:
+            items[item["id"]] = item
+        data[key] = list(items.values())
+    for key, gone in (remove or {}).items():
+        if key not in LIST_SECTIONS:
+            raise Invalid(f"remove works on {', '.join(LIST_SECTIONS)}, not {key!r}",
+                          hint="to clear any other field, set it in changes")
+        have = {item["id"] for item in data.get(key) or []}
+        missing = [i for i in gone if i not in have]
+        if missing:
+            raise Invalid(f"{key} has no item with id {', '.join(map(str, missing))}",
+                          hint="get_report shows the ids that are there")
+        data[key] = [item for item in data[key] if item["id"] not in set(gone)]
+    return save_report(system_id, date, data)
+
+
 def finalize_report(system_id: str, date: str) -> dict[str, Any]:
     """Freeze a draft. Already-final is not an error — the caller got what it wanted."""
     path = _require_path(system_id, date)
