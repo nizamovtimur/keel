@@ -377,6 +377,22 @@ async def finding_picture(system_id: str, date: str, finding_id: str):
     return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-cache"})
 
 
+@router.get("/reports/{system_id}/{date}/diagram")
+def report_diagram(system_id: str, date: str, shape: str = Query("wide", pattern="^(wide|narrow)$")):
+    """The system as Archify draws it: its parts, its trust boundary and the part each
+    risk sits on, as one HTML figure for the page. Drawn from the report on request, so
+    it follows every edit. `html` is null when this machine cannot draw it, and `reason`
+    says why. A plain `def`: drawing runs Node, which must not hold up the event loop."""
+    from keel import diagram
+    from keel.schemas.report import Report
+
+    report = Report(**report_service.get_report(system_id, date)["report"])
+    try:
+        return {"html": diagram.draw(report, get_store().threats, shape), "reason": None}
+    except diagram.Unavailable as e:
+        return {"html": None, "reason": str(e)}
+
+
 @router.put("/reports/{system_id}/{date}")
 async def save_report(system_id: str, date: str, body: dict):
     """Write a report. A final report goes back to draft; 422 when the body does not

@@ -33,7 +33,7 @@ Run each with `uv run` in front, or directly once Keel's environment is active.
 | `keel --http` | Runs the MCP server over Streamable HTTP on port 8001, loopback only. |
 | `docker compose up` | The local UI in a container at `http://localhost:8000/`. Add `--profile mcp` for the HTTP MCP server on `:8001`. |
 
-Settings come from environment variables or `.env`: `CATALOG_DIR` and `REPORTS_DIR` point at other folders, `UI_PORT` moves the UI, `ALLOWED_HOSTS` lists the names the UI answers to, `REPO_URL` adds an "Edit on GitHub" link in the UI.
+Settings come from environment variables or `.env`: `CATALOG_DIR` and `REPORTS_DIR` point at other folders, `UI_PORT` moves the UI, `ALLOWED_HOSTS` lists the names the UI answers to, `REPO_URL` adds an "Edit on GitHub" link in the UI. `KEEL_ARCHIFY` points at the Archify skill that draws the system diagram on a report page (it also needs Node on `PATH`).
 
 ## Skills
 
