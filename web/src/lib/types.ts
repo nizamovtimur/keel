@@ -86,7 +86,7 @@ export interface Mitigation {
   cited_by?: { source_id: string; source_title: string; ref: string; title: string }[];
 }
 
-export interface CoverageEntry { ref: string; title: string; group?: string | null; state: "covered" | "out_of_scope" | "gap"; threats?: string[]; mitigations?: string[]; note?: string | null }
+export interface CoverageEntry { ref: string; title: string; group?: string | null; state: "covered" | "out_of_scope" | "gap"; threats?: string[]; mitigations?: string[]; note?: string | null; outside?: string | null }
 export type SourceKind = "regulation" | "standard" | "best_practice";
 export interface CoverageSource {
   source: { id: string; title: string; kind: SourceKind; version: string; checked: string; url?: string; note?: string; entry_count?: number };
@@ -99,7 +99,7 @@ export interface ThreatStanding { threat: string; standing: Standing; why?: stri
 export interface ComplianceFramework {
   source: CoverageSource["source"];
   counts: Record<Standing, number>;
-  entries: { ref: string; title: string; group?: string | null; standing: Standing; threats: ThreatStanding[]; note?: string | null }[];
+  entries: { ref: string; title: string; group?: string | null; standing: Standing; threats: ThreatStanding[]; note?: string | null; outside?: string | null }[];
 }
 export interface SystemCompliance { system_id: string; system_name: string; date: string; status: string; frameworks: ComplianceFramework[] }
 export interface AllCompliance {

@@ -67,7 +67,8 @@ def standing(report: Report, sources: list[dict[str, Any]]) -> list[dict[str, An
                 s = min((t["standing"] for t in threats), key=STANDINGS.index)
             counts[s] += 1
             entries.append({"ref": e["ref"], "title": e["title"], "group": e.get("group"),
-                            "standing": s, "threats": threats, "note": e.get("note")})
+                            "standing": s, "threats": threats, "note": e.get("note"),
+                            "outside": e.get("outside")})
         out.append({"source": src["source"], "counts": counts, "entries": entries})
     return out
 

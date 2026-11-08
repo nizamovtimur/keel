@@ -119,7 +119,7 @@ export function CoveragePage() {
           if (view === "group" && e.group !== lastG) { lastG = e.group; out.push(<tr key={"g" + e.group}><td colSpan={4} style={{ paddingTop: 18, fontWeight: 700, borderBottom: "1px solid var(--ink)" }}>{e.group || "Other"}</td></tr>); }
           out.push(<tr key={e.ref}>
             <td><span className="id">{e.ref}</span></td>
-            <td><b style={{ fontWeight: 600 }}>{e.title}</b>{e.note && <div className="t2 small" style={{ marginTop: 2 }}>{e.note}</div>}</td>
+            <td><b style={{ fontWeight: 600 }}>{e.title}</b>{e.note && <div className="t2 small" style={{ marginTop: 2 }}>{e.note}</div>}{e.outside && <div className="t3 small" style={{ marginTop: 2 }}>Outside Keel: {e.outside}</div>}</td>
             <td data-l="State"><span className={`st ${e.state}`}><i className={`k-${e.state}`} />{COV[e.state]}</span></td>
             <td data-l="Covered by" className="small">{[...(e.threats || []).map((x) => <Link key={x} to={`/threats/${x}`}>{clip(threats[x]?.title || x, 60)}</Link>), ...(e.mitigations || []).map((x) => <Link key={x} to={`/controls/${x}`}>{mits[x]?.name || x}</Link>)]
               .reduce<React.ReactNode[]>((a, el, i) => (i ? [...a, "; ", el] : [el]), []) }{!(e.threats || []).length && !(e.mitigations || []).length && <span className="t3">—</span>}</td>
