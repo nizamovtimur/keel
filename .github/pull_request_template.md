@@ -13,6 +13,7 @@
 
 ## Checklist
 
+- [ ] Every commit is signed off: `git commit -s` ([DCO](https://github.com/roselis-lab/keel/blob/main/CONTRIBUTING.md#sign-off-your-commits-dco))
 - [ ] `uv run ruff check .` passes
 - [ ] `uv run pytest` passes
 - [ ] For catalog changes: I edited `catalog/*.yaml` and ran `uv run keel validate`
