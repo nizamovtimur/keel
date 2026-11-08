@@ -65,6 +65,16 @@ uv run pytest
 
 All three must pass. CI runs the same checks.
 
+## Sign off your commits (DCO)
+
+Every commit in a pull request ends with a sign-off line matching its author:
+
+```
+Signed-off-by: Your Name <you@example.com>
+```
+
+By adding it you certify the [Developer Certificate of Origin](https://developercertificate.org): you wrote the change or otherwise have the right to submit it under the project's license. `git commit -s` adds the line; `git rebase --signoff origin/main` adds it to commits already made. The DCO check in CI refuses a pull request with an unsigned commit.
+
 ## Reporting issues
 
 Use the issue templates: bug reports, catalog additions, catalog corrections (challenges to existing content are especially welcome), and feature requests.
