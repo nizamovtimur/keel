@@ -85,6 +85,7 @@ function Framework({ fw, threats, sid, date }: { fw: ComplianceFramework; threat
                 : <Link to={`/threats/${t.threat}`}>{clip(threats[t.threat]?.title || t.threat, 90)}</Link>}
               <span className="t2"> — {t.standing === "not_met" ? `${t.severity} risk, ${plural(t.open_fixes || 0, "fix", "fixes")} not built` : t.standing === "met" ? "every fix in place" : t.standing === "not_assessed" ? "not looked at in this assessment" : clip(t.why || "", 180)}</span>
             </div>)}
+            {e.outside && <div className="t3" style={{ marginTop: 2 }}>Outside Keel: {e.outside}</div>}
           </td>
         </tr>)}
       </tbody></table>
