@@ -47,9 +47,12 @@ TOKENS = (
     "security=--hi,messagebus=--md,frontend=--lo,backend=--ink-3,external=--ink-3,cloud=--ink-3,database=--ink-3"
 )
 
+# Plain words for who or what starts a risk (catalog/source.yaml). `error` is a defect in
+# the code or its configuration, not the model's mistake: the model's own failures are
+# the system box.
 WHO = {
     "external-attacker": "External attacker", "supply-chain": "Supply chain",
-    "internal": "Insider or user", "error": "Error", "accident": "Accident",
+    "internal": "Insider or user", "error": "Bug or bad setup", "accident": "A user's slip",
 }
 # The part a path comes in from, by its channel. `user-input`, `training-data` and no
 # channel reach the model directly: those risks sit on the system box itself.

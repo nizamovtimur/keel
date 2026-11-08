@@ -151,3 +151,8 @@ def test_archify_passes_the_drawing_of_a_crowded_report(shape):
     r, threats = crowded()
     html = diagram.draw(r, threats, shape)
     assert html.startswith("<figure") and "<script" not in html
+
+
+def test_a_defect_is_named_in_plain_words_and_is_not_the_model():
+    c = diagram.candidate(rep(finding("T-A", source={"who": "error", "motive": "m", "access": "a"})), THREATS)
+    assert boxes(c)["who-error"]["label"] == "Bug or bad setup"
