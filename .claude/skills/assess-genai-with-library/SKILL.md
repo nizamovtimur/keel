@@ -42,7 +42,7 @@ Two kinds of completeness, and a report shows both: every catalog threat class w
     ```
 
     Say in one line what the reader will find there and what is left to do, e.g. "3 findings, 5 requirements, review the grades and finalize." Do not print the YAML.
-    Under it, one line per finding: could a deterministic check (a static rule, a configuration query, a test, a script) have found it in this architecture, `yes`, `partly` or `no`, and the fact it would check, e.g. "T-SUPPLY-DEPS: yes, the model name in the config has no dated version". `partly` needs that fact named too; without one it is `no`. Where such a check is cheap and safe to run here, run it before saving and record it as `command` or `test` evidence. These lines are your reply, not a field of the report. Hand the link back as finished only when `open` is empty; until then what you hand back is the open questions.
+    Where a deterministic check (a static rule, a configuration query, a test, a script) would confirm a finding and is cheap and safe to run here, run it before saving and record it as `command` or `test` evidence. Hand the link back as finished only when `open` is empty; until then what you hand back is the open questions.
 
 **The record is a draft, and stays one.** The specialist corrects grades and wording, then finalizes it themselves in the UI. Finalizing is not exposed to you: signing off on someone else's judgment is not yours to do.
 
