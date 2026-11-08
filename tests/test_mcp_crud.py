@@ -311,3 +311,57 @@ async def test_there_is_no_way_to_delete_a_report(reports):
     from keel.mcp.registry import TOOL_REGISTRY
 
     assert not [n for n in TOOL_REGISTRY if "report" in n and "delete" in n]
+
+
+def _question(qid: str, text: str) -> dict:
+    return {"id": qid, "question": text, "looked_in": "the agent config",
+            "needed_for": "T-A, step 2"}
+
+
+@pytest.mark.asyncio
+async def test_update_report_sends_only_what_changes(reports):
+    """A pass of an assessment adds a few items; the rest of the report is not resent."""
+    key = {"system_id": "support-bot", "date": "2026-08-30"}
+    await dispatch_tool("create_report", {**key, "system_name": "Support Bot",
+                                           "system_description": "Answers questions.",
+                                           "assessor": "T <t@example.com>"})
+    first = await dispatch_tool("update_report", {**key, "changes": {
+        "system_description": "Answers questions and issues refunds.",
+        "open_questions": [_question("Q1", "Who may approve a refund?"),
+                           _question("Q2", "Is the refund tool reachable from chat?")],
+    }})
+    assert first["success"] is True
+    assert "open" in first                       # unanswered questions keep it open
+
+    await dispatch_tool("update_report", {**key, "changes": {
+        "open_questions": [{**_question("Q1", "Who may approve a refund?"), "answer": "Support leads."}],
+    }, "remove": {"open_questions": ["Q2"]}})
+    report = await dispatch_tool("get_report", key)
+    assert report["system_description"] == "Answers questions and issues refunds."
+    assert [(q["id"], q["answer"]) for q in report["open_questions"]] == [("Q1", "Support leads.")]
+
+
+@pytest.mark.asyncio
+async def test_a_refused_update_changes_nothing(reports):
+    key = {"system_id": "support-bot", "date": "2026-08-30"}
+    await dispatch_tool("create_report", {**key, "system_name": "Support Bot",
+                                           "system_description": "Answers questions.",
+                                           "assessor": "T <t@example.com>"})
+    no_id = await dispatch_tool("update_report", {**key, "changes": {
+        "system_description": "Changed.", "open_questions": [{"question": "Who?"}]}})
+    assert no_id["code"] == "invalid" and "id" in no_id["hint"]
+    unknown = await dispatch_tool("update_report", {**key, "remove": {"open_questions": ["Q9"]}})
+    assert unknown["code"] == "invalid"
+    assert (await dispatch_tool("get_report", key))["system_description"] == "Answers questions."
+
+
+@pytest.mark.asyncio
+async def test_list_threats_reads_named_threats_without_catalog_fields(store):
+    """What an assessment reads: several threats in one call, without references,
+    positioning and cited_by."""
+    got = await dispatch_tool("list_threats", {
+        "brief": False, "ids": ["T-A", "T-A"], "include": ["harm", "weaknesses", "mitigations"]})
+    assert got["count"] == 1
+    assert set(got["threats"][0]) == {"id", "title", "harm", "weaknesses", "mitigations"}
+    missing = await dispatch_tool("list_threats", {"ids": ["T-NOPE"]})
+    assert missing["code"] == "not_found"

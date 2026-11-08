@@ -30,10 +30,12 @@ def _threat_item(rec: dict[str, Any], include: list[str]) -> dict[str, Any]:
     return item
 
 
-async def list_threats(brief: bool = True, include: list[str] | None = None) -> dict[str, Any]:
-    """List all threats. `brief` returns [id, title] pairs."""
+async def list_threats(brief: bool = True, include: list[str] | None = None,
+                       ids: list[str] | None = None) -> dict[str, Any]:
+    """List threats, all of them or the ones named in `ids`. `brief` returns [id, title] pairs."""
     store = get_store()
-    threats = [store.threats[k] for k in sorted(store.threats)]
+    threats = ([_require(i) for i in dict.fromkeys(ids)] if ids
+               else [store.threats[k] for k in sorted(store.threats)])
     if brief:
         return {"threats": [[t["id"], t.get("title")] for t in threats], "count": len(threats)}
     include = include or []
